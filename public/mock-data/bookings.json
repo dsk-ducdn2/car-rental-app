@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "userId": 2,
+    "vehicleId": 1,
+    "startDate": "2024-07-01",
+    "endDate": "2024-07-03",
+    "price": 2100000,
+    "status": "Completed",
+    "location": "Hà Nội"
+  },
+  {
+    "id": 2,
+    "userId": 2,
+    "vehicleId": 2,
+    "startDate": "2024-07-05",
+    "endDate": "2024-07-07",
+    "price": 2700000,
+    "status": "Completed",
+    "location": "TP.HCM"
+  },
+  {
+    "id": 3,
+    "userId": 2,
+    "vehicleId": 3,
+    "startDate": "2024-07-10",
+    "endDate": "2024-07-12",
+    "price": 1800000,
+    "status": "Reserved",
+    "location": "Đà Nẵng"
+  }
+] 
