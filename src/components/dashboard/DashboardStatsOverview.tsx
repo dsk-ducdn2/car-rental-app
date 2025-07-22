@@ -13,7 +13,7 @@ export const DashboardStatsOverview = component$(() => {
             datasets: [
               {
                 label: 'Mobile apps',
-                data: [50, 100, 200, 150, 300, 250, 200, 220, 350],
+                data: [10, 100, 200, 150, 220, 250, 200, 220, 250],
                 borderColor: '#00bcd4',
                 backgroundColor: 'rgba(0,188,212,0.1)',
                 fill: true,
@@ -22,7 +22,7 @@ export const DashboardStatsOverview = component$(() => {
               },
               {
                 label: 'Websites',
-                data: [40, 80, 120, 180, 200, 290, 250, 300, 320],
+                data: [20, 80, 120, 180, 200, 210, 250, 230, 240],
                 borderColor: '#21294c',
                 backgroundColor: 'rgba(33,41,76,0.1)',
                 fill: false,

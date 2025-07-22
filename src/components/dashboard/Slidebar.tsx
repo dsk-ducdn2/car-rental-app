@@ -1,15 +1,16 @@
 import { component$ } from '@builder.io/qwik';
+import { useLocation } from '@builder.io/qwik-city';
 
 const menu = [
   { label: 'Dashboard', icon: (
     <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><rect x="3" y="13" width="7" height="7" rx="2" fill="currentColor"/><rect x="3" y="3" width="7" height="7" rx="2" fill="currentColor"/><rect x="14" y="3" width="7" height="7" rx="2" fill="currentColor"/><rect x="14" y="13" width="7" height="7" rx="2" fill="currentColor"/></svg>
-  ), active: true },
+  ), href: '/dashboard' },
   { label: 'Tables', icon: (
     <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="4" rx="1" fill="currentColor"/><rect x="3" y="10" width="18" height="4" rx="1" fill="currentColor"/><rect x="3" y="15" width="18" height="4" rx="1" fill="currentColor"/></svg>
-  ) },
+  ), href: '/tables' },
   { label: 'Billing', icon: (
     <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2" fill="currentColor"/><rect x="7" y="3" width="10" height="4" rx="1" fill="currentColor"/></svg>
-  ) },
+  ), href: '/tables' },
   { label: 'Virtual Reality', icon: (
     <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="5" fill="currentColor"/><circle cx="7" cy="12" r="2" fill="#fff"/><circle cx="17" cy="12" r="2" fill="#fff"/></svg>
   ) },
@@ -30,45 +31,82 @@ const accountPages = [
   ), href: '/register' },
 ];
 
-export const Sidebar = component$(() => (
-  <aside class="w-full md:w-72 bg-[#f8f9fa] min-h-screen px-2 md:px-4 pt-4 md:pt-6">
-    {/* Logo */}
-    <div class="flex items-center gap-2 mb-8 px-2">
-      {/* SVG logo */}
-      <svg width="32" height="32" fill="none" viewBox="0 0 32 32">{/* ... */}</svg>
-      <span class="font-bold text-blue-700 uppercase text-base">Soft UI Dashboard</span>
-    </div>
-    {/* Main menu */}
-    <nav>
-      <ul class="flex flex-col gap-2">
-        {menu.map((item) => (
-          <li
-            class={[
-              'flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition shadow-sm',
-              item.active
-                ? 'bg-cyan-500 text-white font-bold'
-                : 'bg-white text-gray-700 hover:bg-gray-100 font-medium',
-              'text-sm',
-            ]}
-          >
-            <span class={[
-              'w-8 h-8 flex items-center justify-center rounded-lg',
-              item.active ? 'bg-cyan-500 text-white' : 'bg-gray-100 text-[#344767]'
-            ]}>
-              {item.icon}
-            </span>
-            <span class={item.active ? 'text-white font-bold ml-2' : 'text-gray-700 ml-2'}>{item.label}</span>
-          </li>
-        ))}
-      </ul>
-      {/* Account pages */}
-      <div class="mt-8 mb-2 px-2 text-xs font-bold text-gray-400 tracking-widest">
-        ACCOUNT PAGES
+export const Sidebar = component$(() => {
+  const loc = useLocation();
+  const currentPath = loc.url.pathname;
+  // Tìm index của menu item có href khớp với url hiện tại
+  const activeIndex = menu.findIndex(item => item.href && currentPath.startsWith(item.href));
+
+  return (
+    <aside class="w-full md:w-72 bg-[#f8f9fa] min-h-screen px-2 md:px-4 pt-4 md:pt-6">
+      {/* Logo */}
+      <div class="flex justify-center mb-8 px-2">
+        <img src="/favicon.svg" alt="Logo" class="w-12 h-12 mx-auto" />
+        {/* <span class="font-bold text-blue-700 uppercase text-base">Soft UI Dashboard</span> */}
       </div>
-      <ul class="flex flex-col gap-2">
-        {accountPages.map((item) => (
-          item.href ? (
-            <a href={item.href} class="block">
+      {/* Main menu */}
+      <nav>
+        <ul class="flex flex-col gap-2">
+          {menu.map((item, idx) => (
+            item.href ? (
+              <a href={item.href} class="block">
+                <li
+                  class={[
+                    'flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition shadow-sm',
+                    activeIndex === idx
+                      ? 'bg-cyan-500 text-white font-bold'
+                      : 'bg-white text-gray-700 hover:bg-gray-100 font-medium',
+                    'text-sm',
+                  ]}
+                >
+                  <span class={[
+                    'w-8 h-8 flex items-center justify-center rounded-lg',
+                    activeIndex === idx ? 'bg-cyan-500 text-white' : 'bg-gray-100 text-[#344767]'
+                  ]}>
+                    {item.icon}
+                  </span>
+                  <span class={activeIndex === idx ? 'text-white font-bold ml-2' : 'text-gray-700 ml-2'}>{item.label}</span>
+                </li>
+              </a>
+            ) : (
+              <li
+                class={[
+                  'flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition shadow-sm',
+                  activeIndex === idx
+                    ? 'bg-cyan-500 text-white font-bold'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 font-medium',
+                  'text-sm',
+                ]}
+              >
+                <span class={[
+                  'w-8 h-8 flex items-center justify-center rounded-lg',
+                  activeIndex === idx ? 'bg-cyan-500 text-white' : 'bg-gray-100 text-[#344767]'
+                ]}>
+                  {item.icon}
+                </span>
+                <span class={activeIndex === idx ? 'text-white font-bold ml-2' : 'text-gray-700 ml-2'}>{item.label}</span>
+              </li>
+            )
+          ))}
+        </ul>
+        {/* Account pages */}
+        <div class="mt-8 mb-2 px-2 text-xs font-bold text-gray-400 tracking-widest">
+          ACCOUNT PAGES
+        </div>
+        <ul class="flex flex-col gap-2">
+          {accountPages.map((item) => (
+            item.href ? (
+              <a href={item.href} class="block">
+                <li
+                  class="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer bg-white hover:bg-gray-100 shadow-sm font-medium text-sm"
+                >
+                  <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-[#344767]">
+                    {item.icon}
+                  </span>
+                  <span class="ml-2">{item.label}</span>
+                </li>
+              </a>
+            ) : (
               <li
                 class="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer bg-white hover:bg-gray-100 shadow-sm font-medium text-sm"
               >
@@ -77,19 +115,10 @@ export const Sidebar = component$(() => (
                 </span>
                 <span class="ml-2">{item.label}</span>
               </li>
-            </a>
-          ) : (
-            <li
-              class="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer bg-white hover:bg-gray-100 shadow-sm font-medium text-sm"
-            >
-              <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-[#344767]">
-                {item.icon}
-              </span>
-              <span class="ml-2">{item.label}</span>
-            </li>
-          )
-        ))}
-      </ul>
-    </nav>
-  </aside>
-));
+            )
+          ))}
+        </ul>
+      </nav>
+    </aside>
+  );
+});
