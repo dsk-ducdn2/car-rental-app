@@ -1,48 +1,85 @@
 import { component$, useSignal } from '@builder.io/qwik';
-import { useNavigate } from '@builder.io/qwik-city';
-import { useAuth } from '../../state/auth';
 
 export default component$(() => {
-  const email = useSignal('');
-  const password = useSignal('');
-  const role = useSignal('User');
-  const nav = useNavigate();
-  const { login } = useAuth();
-  const error = useSignal('');
-
+  const remember = useSignal(false);
   return (
-    <main class="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-white px-4">
-      <form class="bg-white shadow-lg rounded-xl p-8 w-full max-w-md space-y-6" preventdefault:submit onSubmit$={async () => {
-        const u = await login(email.value, password.value);
-        if (u && u.role === role.value) {
-          error.value = '';
-          nav('/');
-        } else {
-          error.value = 'Sai thông tin đăng nhập hoặc vai trò!';
-        }
-      }}>
-        <h2 class="text-2xl font-bold text-indigo-700 mb-2 text-center">Đăng nhập</h2>
-        <div>
-          <label class="block text-gray-600 mb-1">Email</label>
-          <input type="email" class="w-full border rounded px-3 py-2" bind:value={email} required />
-        </div>
-        <div>
-          <label class="block text-gray-600 mb-1">Mật khẩu</label>
-          <input type="password" class="w-full border rounded px-3 py-2" bind:value={password} required />
-        </div>
-        <div>
-          <label class="block text-gray-600 mb-1">Vai trò</label>
-          <select class="w-full border rounded px-3 py-2" bind:value={role}>
-            <option value="User">User</option>
-            <option value="Admin">Admin</option>
-          </select>
-        </div>
-        {error.value && <div class="text-red-500 text-sm text-center">{error.value}</div>}
-        <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded font-semibold hover:bg-indigo-700 transition">Đăng nhập</button>
-        <div class="text-center text-sm mt-2">
-          Chưa có tài khoản? <a href="/register" class="text-indigo-600 hover:underline">Đăng ký</a>
-        </div>
-      </form>
-    </main>
+    <div class="min-h-screen flex flex-col md:flex-row">
+      {/* Left: Sign In Form */}
+      <div class="flex-1 flex items-center justify-center bg-white">
+        <form class="w-full max-w-md mx-auto p-8">
+          <div class="text-gray-500 text-center mb-6 text-base">Enter your email and password to sign in</div>
+          {/* Email */}
+          <div class="mb-4">
+            <label class="block font-semibold mb-1" htmlFor="email">Email</label>
+            <input
+              id="email"
+              type="text"
+              class="w-full px-4 py-2 rounded border border-gray-300 bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="Enter your email"
+            />
+          </div>
+          {/* Password */}
+          <div class="mb-4">
+            <label class="block font-semibold mb-1" htmlFor="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              class="w-full px-4 py-2 rounded border border-gray-300 bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="Enter your password"
+            />
+          </div>
+          {/* Remember me - custom switch */}
+          <div class="flex items-center mb-6">
+            <input
+              id="remember"
+              type="checkbox"
+              checked={remember.value}
+              onChange$={() => (remember.value = !remember.value)}
+              class="hidden"
+            />
+            <label htmlFor="remember" class="relative inline-block w-12 h-6 mr-3 align-middle select-none cursor-pointer">
+              <span
+                class={[
+                  'block w-12 h-6 rounded-full transition-colors duration-200',
+                  remember.value ? 'bg-[#4B4A75]' : 'bg-gray-200',
+                ]}
+              ></span>
+              <span
+                class={[
+                  'absolute left-0 top-0 w-6 h-6 bg-white rounded-full shadow transition-transform duration-200',
+                  remember.value ? 'translate-x-6' : 'translate-x-0',
+                ]}
+                style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.10)' }}
+              ></span>
+            </label>
+            <span class="font-semibold text-sm">REMEMBER ME</span>
+          </div>
+          {/* Sign In Button */}
+          <button
+            type="submit"
+            class="w-full py-3 rounded-lg bg-gradient-to-r from-cyan-400 to-blue-500 text-white font-bold shadow text-sm tracking-wider"
+          >
+            SIGN IN
+          </button>
+          {/* Sign Up Link */}
+          <div class="mt-8 text-center text-gray-400 text-sm">
+            DON'T HAVE AN ACCOUNT?{' '}
+            <a href="/register" class="text-blue-500 font-semibold hover:underline">SIGN UP</a>
+          </div>
+        </form>
+      </div>
+      {/* Right: Custom background image, hidden on mobile */}
+      <div class="hidden md:flex flex-1 items-center justify-center">
+        <div
+          class="w-full h-full min-h-screen rounded-br-3xl"
+          style={{
+            backgroundImage: 'url(https://png.pngtree.com/thumb_back/fw800/background/20240522/pngtree-abstract-backkground-of-the-front-of-a-car-image_15683380.jpg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+          }}
+        ></div>
+      </div>
+    </div>
   );
-}); 
+});

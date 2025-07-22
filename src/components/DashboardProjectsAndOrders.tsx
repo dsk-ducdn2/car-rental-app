@@ -3,7 +3,8 @@ import { component$ } from '@builder.io/qwik';
 const projects = [
   {
     logo: (
-      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/xd/xd-original.svg" alt="XD" class="w-6 h-6" />
+      // Adobe XD icon
+      <svg width="24" height="24" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#470137"/><text x="50%" y="60%" text-anchor="middle" fill="#ff61f6" font-size="12" font-weight="bold" font-family="Arial">XD</text></svg>
     ),
     name: 'SOFT UI XD VERSION',
     members: [1, 2, 3, 4],
@@ -13,7 +14,8 @@ const projects = [
   },
   {
     logo: (
-      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg" alt="Google" class="w-6 h-6" />
+      // Google icon
+      <svg width="24" height="24" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#fff"/><g><circle cx="12" cy="12" r="10" fill="#4285F4"/><path d="M12 2a10 10 0 0 1 7.07 2.93l-2.83 2.83A6 6 0 0 0 12 6V2z" fill="#34A853"/><path d="M12 2v4a6 6 0 0 0-4.24 1.76L4.93 4.93A10 10 0 0 1 12 2z" fill="#FBBC05"/><path d="M2 12a10 10 0 0 1 2.93-7.07l2.83 2.83A6 6 0 0 0 6 12H2z" fill="#EA4335"/></g></svg>
     ),
     name: 'ADD PROGRESS TRACK',
     members: [2, 3],
@@ -23,7 +25,8 @@ const projects = [
   },
   {
     logo: (
-      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/slack/slack-original.svg" alt="Slack" class="w-6 h-6" />
+      // Slack icon
+      <svg width="24" height="24" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#fff"/><g><rect x="10" y="2" width="4" height="8" rx="2" fill="#36C5F0"/><rect x="2" y="10" width="8" height="4" rx="2" fill="#2EB67D"/><rect x="14" y="10" width="8" height="4" rx="2" fill="#ECB22E"/><rect x="10" y="14" width="4" height="8" rx="2" fill="#E01E5A"/></g></svg>
     ),
     name: 'FIX PLATFORM ERRORS',
     members: [1, 4],
@@ -33,7 +36,8 @@ const projects = [
   },
   {
     logo: (
-      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/spotify/spotify-original.svg" alt="Spotify" class="w-6 h-6" />
+      // Spotify icon
+      <svg width="24" height="24" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#1ED760"/><circle cx="12" cy="12" r="8" fill="#191414"/><path d="M8 15c2.5-1 5.5-1 8 0" stroke="#1ED760" stroke-width="1.5" stroke-linecap="round"/><path d="M9 12c2-0.7 4-0.7 6 0" stroke="#1ED760" stroke-width="1.2" stroke-linecap="round"/><path d="M10 10c1.2-0.4 2.8-0.4 4 0" stroke="#1ED760" stroke-width="1" stroke-linecap="round"/></svg>
     ),
     name: 'LAUNCH OUR MOBILE APP',
     members: [1, 2, 3, 4],
@@ -43,7 +47,8 @@ const projects = [
   },
   {
     logo: (
-      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/trello/trello-plain.svg" alt="Trello" class="w-6 h-6" />
+      // Trello icon
+      <svg width="24" height="24" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#fff"/><rect x="3" y="3" width="18" height="18" rx="4" fill="#026AA7"/><rect x="6" y="6" width="4" height="12" rx="1" fill="#fff"/><rect x="14" y="6" width="4" height="7" rx="1" fill="#fff"/></svg>
     ),
     name: 'ADD THE NEW PRICING PAGE',
     members: [5],
@@ -53,7 +58,8 @@ const projects = [
   },
   {
     logo: (
-      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/inkscape/inkscape-original.svg" alt="Inkscape" class="w-6 h-6" />
+      // Inkscape icon
+      <svg width="24" height="24" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#fff"/><path d="M12 4L20 18H4L12 4Z" fill="#222"/><circle cx="12" cy="18" r="2" fill="#222"/></svg>
     ),
     name: 'REDESIGN NEW ONLINE SHOP',
     members: [1, 2],

@@ -24,10 +24,10 @@ const accountPages = [
   ) },
   { label: 'Sign In', icon: (
     <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" fill="currentColor"/><path d="M9 12h6M12 9l3 3-3 3" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  ) },
+  ), href: '/login' },
   { label: 'Sign Up', icon: (
     <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" fill="currentColor"/><path d="M12 8v8M8 12h8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
-  ) },
+  ), href: '/register' },
 ];
 
 export const Sidebar = component$(() => (
@@ -67,14 +67,27 @@ export const Sidebar = component$(() => (
       </div>
       <ul class="flex flex-col gap-2">
         {accountPages.map((item) => (
-          <li
-            class="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer bg-white hover:bg-gray-100 shadow-sm font-medium text-sm"
-          >
-            <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-[#344767]">
-              {item.icon}
-            </span>
-            <span class="ml-2">{item.label}</span>
-          </li>
+          item.href ? (
+            <a href={item.href} class="block">
+              <li
+                class="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer bg-white hover:bg-gray-100 shadow-sm font-medium text-sm"
+              >
+                <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-[#344767]">
+                  {item.icon}
+                </span>
+                <span class="ml-2">{item.label}</span>
+              </li>
+            </a>
+          ) : (
+            <li
+              class="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer bg-white hover:bg-gray-100 shadow-sm font-medium text-sm"
+            >
+              <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-[#344767]">
+                {item.icon}
+              </span>
+              <span class="ml-2">{item.label}</span>
+            </li>
+          )
         ))}
       </ul>
     </nav>
