@@ -1,11 +1,11 @@
 import { component$ } from '@builder.io/qwik';
-import { DashboardHeader } from '../../components/DashboardHeader';
-import { DashboardFeatureCards } from '../../components/DashboardFeatureCards';
-import { DashboardStatsOverview } from '../../components/DashboardStatsOverview';
-import { DashboardProjectsAndOrders } from '../../components/DashboardProjectsAndOrders';
-import { DashboardFooter } from '../../components/DashboardFooter';
-import { Sidebar } from '../../components/Slidebar';
-import { StatsCards } from '../../components/StatsCards';
+import { DashboardHeader } from '../../components/dashboard/DashboardHeader';
+import { DashboardFeatureCards } from '../../components/dashboard/DashboardFeatureCards';
+import { DashboardStatsOverview } from '../../components/dashboard/DashboardStatsOverview';
+import { DashboardProjectsAndOrders } from '../../components/dashboard/DashboardProjectsAndOrders';
+import { DashboardFooter } from '../../components/dashboard/DashboardFooter';
+import { Sidebar } from '../../components/dashboard/Slidebar';
+import { StatsCards } from '../../components/dashboard/StatsCards';
 
 export default component$(() => (
   <div class="flex flex-col md:flex-row min-h-screen bg-[#f8f9fa]">

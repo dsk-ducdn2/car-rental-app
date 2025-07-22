@@ -1,7 +1,7 @@
 import { component$ } from '@builder.io/qwik';
-import LandingHeader from '../../components/LandingHeader';
-import LandingHeroSection from '../../components/LandingHeroSection';
-import LandingWhyChooseUs from '../../components/LandingWhyChooseUs';
+import LandingHeader from '../../components/landing-page/LandingHeader';
+import LandingHeroSection from '../../components/landing-page/LandingHeroSection';
+import LandingWhyChooseUs from '../../components/landing-page/LandingWhyChooseUs';
 
 export default component$(() => {
   return (
