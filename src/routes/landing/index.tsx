@@ -1,9 +1,51 @@
-import { component$ } from '@builder.io/qwik';
+import { component$, useStore, $ } from '@builder.io/qwik';
 import LandingHeader from '../../components/landing-page/LandingHeader';
 import LandingHeroSection from '../../components/landing-page/LandingHeroSection';
 import LandingWhyChooseUs from '../../components/landing-page/LandingWhyChooseUs';
+import { Console } from 'console';
 
 export default component$(() => {
+  const formState = useStore({
+    email: '',
+    phone: '',
+    firstName: '',
+    lastName: '',
+    companyName: '',
+    companySize: '',
+    message: '',
+  });
+
+  const handleSubmit = $(async (e: Event) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        email: formState.email,
+        phone: formState.phone,
+        firstName: formState.firstName,
+        lastName: formState.lastName,
+        companyName: formState.companyName,
+        companySize: formState.companySize,
+        message: formState.message,
+      };
+
+      fetch(`https://script.google.com/macros/s/AKfycbzJWNpS5Sop2NWiI3jA5x1wne2QigTPDZyTQEORzBIBJbKqvC6LNVBb8RV2cYB_-XGG/exec?key=123456`, {
+        redirect: "follow",
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: {
+          'Content-Type': "text/plain;charset=utf-8"
+        }
+      })
+      .then(response => response.text())
+      .then(result => {
+        const res = JSON.parse(result);
+      });
+
+    } catch (err) {
+      alert('Lỗi gửi dữ liệu: ' + err);
+    }
+  });
+
   return (
     <div class="min-h-screen bg-[#f8fbff] flex flex-col">
       <LandingHeader />
@@ -200,35 +242,35 @@ export default component$(() => {
           </div>
           {/* Right: Form */}
           <div class="flex-1 p-8 bg-white flex flex-col justify-center">
-            <form class="space-y-4">
+            <form class="space-y-4" onSubmit$={handleSubmit}>
               <div class="flex flex-col md:flex-row gap-4">
                 <div class="flex-1">
                   <label class="block text-sm font-medium mb-1">Work email *</label>
-                  <input type="email" required placeholder="name@company.com" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2563eb]" />
+                  <input type="email" required placeholder="name@company.com" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2563eb]" value={formState.email} onInput$={e => formState.email = (e.target as HTMLInputElement).value} />
                 </div>
                 <div class="flex-1">
                   <label class="block text-sm font-medium mb-1">Phone number *</label>
-                  <input type="tel" required placeholder="+84..." class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2563eb]" />
+                  <input type="tel" required placeholder="+84..." class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2563eb]" value={formState.phone} onInput$={e => formState.phone = (e.target as HTMLInputElement).value} />
                 </div>
               </div>
               <div class="flex flex-col md:flex-row gap-4">
                 <div class="flex-1">
                   <label class="block text-sm font-medium mb-1">First name *</label>
-                  <input type="text" required placeholder="Jane" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2563eb]" />
+                  <input type="text" required placeholder="Jane" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2563eb]" value={formState.firstName} onInput$={e => formState.firstName = (e.target as HTMLInputElement).value} />
                 </div>
                 <div class="flex-1">
                   <label class="block text-sm font-medium mb-1">Last name *</label>
-                  <input type="text" required placeholder="Doe" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2563eb]" />
+                  <input type="text" required placeholder="Doe" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2563eb]" value={formState.lastName} onInput$={e => formState.lastName = (e.target as HTMLInputElement).value} />
                 </div>
               </div>
               <div class="flex flex-col md:flex-row gap-4">
                 <div class="flex-1">
                   <label class="block text-sm font-medium mb-1">Company name *</label>
-                  <input type="text" required placeholder="Acme Inc." class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2563eb]" />
+                  <input type="text" required placeholder="Acme Inc." class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2563eb]" value={formState.companyName} onInput$={e => formState.companyName = (e.target as HTMLInputElement).value} />
                 </div>
                 <div class="flex-1">
                   <label class="block text-sm font-medium mb-1">Company size *</label>
-                  <select required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2563eb]">
+                  <select required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2563eb]" value={formState.companySize} onChange$={e => formState.companySize = (e.target as HTMLSelectElement).value}>
                     <option value="">Please select</option>
                     <option value="1-10">1-10</option>
                     <option value="11-50">11-50</option>
@@ -240,7 +282,7 @@ export default component$(() => {
               </div>
               <div>
                 <label class="block text-sm font-medium mb-1">How can we help you? *</label>
-                <textarea required placeholder="Let us know your enquiries." class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2563eb] min-h-[80px]"></textarea>
+                <textarea required placeholder="Let us know your enquiries." class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2563eb] min-h-[80px]" value={formState.message} onInput$={e => formState.message = (e.target as HTMLTextAreaElement).value}></textarea>
               </div>
               <button type="submit" class="w-full bg-[#2563eb] text-white font-bold py-3 rounded-lg hover:bg-[#1d4ed8] transition">Submit</button>
               <div class="text-xs text-gray-400 mt-2">By continuing, you agree to our <a href="#" class="underline">Terms of Service</a> and <a href="#" class="underline">Privacy Policy</a>.</div>

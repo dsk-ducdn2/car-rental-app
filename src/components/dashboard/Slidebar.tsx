@@ -1,4 +1,4 @@
-import { component$ } from '@builder.io/qwik';
+import { component$, useSignal } from '@builder.io/qwik';
 import { useLocation } from '@builder.io/qwik-city';
 
 const menu = [
@@ -34,15 +34,32 @@ const accountPages = [
 export const Sidebar = component$(() => {
   const loc = useLocation();
   const currentPath = loc.url.pathname;
+  const collapsed = useSignal(false); // trạng thái thu/phóng
   // Tìm index của menu item có href khớp với url hiện tại
   const activeIndex = menu.findIndex(item => item.href && currentPath.startsWith(item.href));
 
   return (
-    <aside class="w-full md:w-72 bg-[#f8f9fa] min-h-screen px-2 md:px-4 pt-4 md:pt-6">
-      {/* Logo */}
-      <div class="flex justify-center mb-8 px-2">
+    <aside class={[
+      'bg-[#f8f9fa] min-h-screen pt-4 md:pt-6 transition-all duration-300',
+      collapsed.value ? 'w-20 px-1 md:px-2' : 'w-full md:w-72 px-2 md:px-4',
+    ]}>
+      {/* Logo + Toggle */}
+      <div class="flex items-center justify-between mb-8 px-2">
         <img src="/favicon.svg" alt="Logo" class="w-12 h-12 mx-auto" />
-        {/* <span class="font-bold text-blue-700 uppercase text-base">Soft UI Dashboard</span> */}
+        <button
+          type="button"
+          aria-label={collapsed.value ? 'Mở rộng sidebar' : 'Thu nhỏ sidebar'}
+          class="ml-2 p-2 rounded hover:bg-gray-200 transition"
+          onClick$={() => (collapsed.value = !collapsed.value)}
+        >
+          {collapsed.value ? (
+            // icon mở rộng
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M4 12h16M10 6l-6 6 6 6" stroke="#344767" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          ) : (
+            // icon thu nhỏ
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M20 12H4m6 6l6-6-6-6" stroke="#344767" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          )}
+        </button>
       </div>
       {/* Main menu */}
       <nav>
@@ -58,6 +75,7 @@ export const Sidebar = component$(() => {
                       : 'bg-white text-gray-700 hover:bg-gray-100 font-medium',
                     'text-sm',
                   ]}
+                  title={collapsed.value ? item.label : undefined}
                 >
                   <span class={[
                     'w-8 h-8 flex items-center justify-center rounded-lg',
@@ -65,7 +83,9 @@ export const Sidebar = component$(() => {
                   ]}>
                     {item.icon}
                   </span>
-                  <span class={activeIndex === idx ? 'text-white font-bold ml-2' : 'text-gray-700 ml-2'}>{item.label}</span>
+                  {!collapsed.value && (
+                    <span class={activeIndex === idx ? 'text-white font-bold ml-2' : 'text-gray-700 ml-2'}>{item.label}</span>
+                  )}
                 </li>
               </a>
             ) : (
@@ -77,6 +97,7 @@ export const Sidebar = component$(() => {
                     : 'bg-white text-gray-700 hover:bg-gray-100 font-medium',
                   'text-sm',
                 ]}
+                title={collapsed.value ? item.label : undefined}
               >
                 <span class={[
                   'w-8 h-8 flex items-center justify-center rounded-lg',
@@ -84,36 +105,38 @@ export const Sidebar = component$(() => {
                 ]}>
                   {item.icon}
                 </span>
-                <span class={activeIndex === idx ? 'text-white font-bold ml-2' : 'text-gray-700 ml-2'}>{item.label}</span>
+                {!collapsed.value && (
+                  <span class={activeIndex === idx ? 'text-white font-bold ml-2' : 'text-gray-700 ml-2'}>{item.label}</span>
+                )}
               </li>
             )
           ))}
         </ul>
         {/* Account pages */}
-        <div class="mt-8 mb-2 px-2 text-xs font-bold text-gray-400 tracking-widest">
-          ACCOUNT PAGES
-        </div>
+        <div class={[collapsed.value ? 'hidden' : 'mt-8 mb-2 px-2 text-xs font-bold text-gray-400 tracking-widest']}>ACCOUNT PAGES</div>
         <ul class="flex flex-col gap-2">
           {accountPages.map((item) => (
             item.href ? (
               <a href={item.href} class="block">
                 <li
                   class="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer bg-white hover:bg-gray-100 shadow-sm font-medium text-sm"
+                  title={collapsed.value ? item.label : undefined}
                 >
                   <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-[#344767]">
                     {item.icon}
                   </span>
-                  <span class="ml-2">{item.label}</span>
+                  {!collapsed.value && <span class="ml-2">{item.label}</span>}
                 </li>
               </a>
             ) : (
               <li
                 class="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer bg-white hover:bg-gray-100 shadow-sm font-medium text-sm"
+                title={collapsed.value ? item.label : undefined}
               >
                 <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-[#344767]">
                   {item.icon}
                 </span>
-                <span class="ml-2">{item.label}</span>
+                {!collapsed.value && <span class="ml-2">{item.label}</span>}
               </li>
             )
           ))}
