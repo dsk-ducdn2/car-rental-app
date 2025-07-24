@@ -15,6 +15,7 @@ export default component$(() => {
     message: '',
   });
 
+  const GOOGLE_SCRIPT_KEY = import.meta.env.VITE_GOOGLE_SCRIPT_KEY;
   const handleSubmit = $(async (e: Event) => {
     e.preventDefault();
     try {
@@ -28,7 +29,7 @@ export default component$(() => {
         message: formState.message,
       };
 
-      fetch(`https://script.google.com/macros/s/AKfycbzJWNpS5Sop2NWiI3jA5x1wne2QigTPDZyTQEORzBIBJbKqvC6LNVBb8RV2cYB_-XGG/exec?key=123456`, {
+      fetch(`https://script.google.com/macros/s/AKfycbzJWNpS5Sop2NWiI3jA5x1wne2QigTPDZyTQEORzBIBJbKqvC6LNVBb8RV2cYB_-XGG/exec?key=${GOOGLE_SCRIPT_KEY}`, {
         redirect: "follow",
         method: 'POST',
         body: JSON.stringify(payload),
