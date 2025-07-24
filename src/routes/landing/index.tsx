@@ -29,21 +29,19 @@ export default component$(() => {
         message: formState.message,
       };
 
-      fetch(`https://script.google.com/macros/s/AKfycbzJWNpS5Sop2NWiI3jA5x1wne2QigTPDZyTQEORzBIBJbKqvC6LNVBb8RV2cYB_-XGG/exec?key=${GOOGLE_SCRIPT_KEY}`, {
+      const response = await fetch(`https://script.google.com/macros/s/AKfycbzJWNpS5Sop2NWiI3jA5x1wne2QigTPDZyTQEORzBIBJbKqvC6LNVBb8RV2cYB_-XGG/exec?key=${GOOGLE_SCRIPT_KEY}`, {
         redirect: "follow",
         method: 'POST',
         body: JSON.stringify(payload),
         headers: {
           'Content-Type': "text/plain;charset=utf-8"
         }
-      })
-      .then(response => response.text())
-      .then(result => {
-        const res = JSON.parse(result);
       });
-
+      const result = await response.text();
+      const res = JSON.parse(result);
+      // Xử lý kết quả nếu cần
     } catch (err) {
-      alert('Lỗi gửi dữ liệu: ' + err);
+      console.log('Error sending data: ' + (err as any)?.message || err);
     }
   });
 

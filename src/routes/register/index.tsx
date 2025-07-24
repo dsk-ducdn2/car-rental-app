@@ -1,7 +1,85 @@
-import { component$, useSignal } from '@builder.io/qwik';
+import { component$, useSignal, $ } from '@builder.io/qwik';
 
 export default component$(() => {
   const agree = useSignal(false);
+  const submitted = useSignal(false);
+
+  // Thêm signals cho value và error của từng trường
+  const name = useSignal('');
+  const email = useSignal('');
+  const password = useSignal('');
+
+  const nameError = useSignal('');
+  const emailError = useSignal('');
+  const passwordError = useSignal('');
+  const serverError = useSignal('');
+
+  const API_URL = import.meta.env.VITE_API_URL;
+
+  const handleSubmit = $(async (e: Event) => {
+    submitted.value = true;
+    let valid = true;
+
+    // Name
+    if (!name.value.trim()) {
+      nameError.value = 'Required fields';
+      valid = false;
+    } else {
+      nameError.value = '';
+    }
+
+    // Email
+    if (!email.value.trim()) {
+      emailError.value = 'Required fields';
+      valid = false;
+    } else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email.value)) {
+      emailError.value = 'Invalid email';
+      valid = false;
+    } else {
+      emailError.value = '';
+    }
+
+    // Password
+    if (!password.value) {
+      passwordError.value = 'Required fields';
+      valid = false;
+    } else if (password.value.length < 6) {
+      passwordError.value = 'Password must be 6 characters or more';
+      valid = false;
+    } else {
+      passwordError.value = '';
+    }
+
+    if (!agree.value || !valid) {
+      e.preventDefault();
+      return;
+    }
+
+    e.preventDefault(); // Ngăn reload form
+    serverError.value = '';
+
+    try {
+      const res = await fetch(`${API_URL}/Users/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.value,
+          password: password.value,
+          name: name.value,
+          phone: null
+        })
+      });
+
+      if (res.ok) {
+        window.location.href = '/login';
+      } else {
+        const data = await res.json();
+        serverError.value = data?.message || 'Registration failed. Please try again!';
+      }
+    } catch (err) {
+      serverError.value = (err as any)?.message || 'Unable to connect to server!';
+    }
+  });
   return (
     <div class="min-h-screen bg-[#f6f7fa]">
       {/* Banner */}
@@ -43,23 +121,38 @@ export default component$(() => {
           <div class="flex-1 h-px bg-gray-200"></div>
         </div>
         {/* Form */}
-        <form class="w-full">
+        <form class="w-full" preventdefault:submit onSubmit$={handleSubmit}>
           <input
             type="text"
             placeholder="Name"
-            class="w-full mb-3 px-4 py-2 rounded border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            value={name.value}
+            onInput$={e => (name.value = (e.target as HTMLInputElement).value)}
+            class="w-full mb-1 px-4 py-2 rounded border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
+          {nameError.value && (
+            <div class="text-red-500 text-xs mb-2 ml-2">{nameError.value}</div>
+          )}
           <input
             type="email"
             placeholder="Email"
-            class="w-full mb-3 px-4 py-2 rounded border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            value={email.value}
+            onInput$={e => (email.value = (e.target as HTMLInputElement).value)}
+            class="w-full mb-1 px-4 py-2 rounded border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
+          {emailError.value && (
+            <div class="text-red-500 text-xs mb-2 ml-2">{emailError.value}</div>
+          )}
           <input
             type="password"
             placeholder="Password"
-            class="w-full mb-3 px-4 py-2 rounded border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            value={password.value}
+            onInput$={e => (password.value = (e.target as HTMLInputElement).value)}
+            class="w-full mb-1 px-4 py-2 rounded border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
-          <div class="flex items-center mb-4">
+          {passwordError.value && (
+            <div class="text-red-500 text-xs mb-2 ml-2">{passwordError.value}</div>
+          )}
+          <div class="flex items-center mb-1">
             <input
               id="agree"
               type="checkbox"
@@ -71,12 +164,18 @@ export default component$(() => {
               I AGREE THE <span class="font-bold">TERMS AND CONDITIONS</span>
             </label>
           </div>
+          {submitted.value && !agree.value && (
+            <div class="text-red-500 text-xs mb-3 ml-7">You must agree to the terms and conditions</div>
+          )}
           <button
             type="submit"
             class="w-full py-3 rounded-lg bg-[#393869] text-white font-bold shadow text-sm tracking-wider hover:bg-[#2d2c4a] transition"
           >
             SIGN UP
           </button>
+          {serverError.value && (
+            <div class="text-red-500 text-xs mt-2 text-center">{serverError.value}</div>
+          )}
         </form>
         {/* Sign In Link */}
         <div class="mt-8 text-center text-gray-400 text-sm">
