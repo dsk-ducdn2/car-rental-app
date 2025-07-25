@@ -2,7 +2,7 @@ import { component$, useStore, $ } from '@builder.io/qwik';
 import LandingHeader from '../../components/landing-page/LandingHeader';
 import LandingHeroSection from '../../components/landing-page/LandingHeroSection';
 import LandingWhyChooseUs from '../../components/landing-page/LandingWhyChooseUs';
-import { Console } from 'console';
+import './landing.css';
 
 export default component$(() => {
   const formState = useStore({
@@ -17,6 +17,9 @@ export default component$(() => {
 
   //const GOOGLE_SCRIPT_KEY = import.meta.env.VITE_GOOGLE_SCRIPT_KEY;
   const API_URL = import.meta.env.VITE_API_URL;
+  const toastState = useStore({
+    visible: false,
+  });
   const handleSubmit = $(async (e: Event) => {
     e.preventDefault();
     // try {
@@ -61,7 +64,10 @@ export default component$(() => {
       });
 
       if (res.ok) {
-        window.location.href = '/login';
+        toastState.visible = true;
+        setTimeout(() => {
+          toastState.visible = false;
+        }, 3000);
       } else {
         const data = await res.json();
         console.log(data);
@@ -309,7 +315,7 @@ export default component$(() => {
                 <label class="block text-sm font-medium mb-1">How can we help you? *</label>
                 <textarea required placeholder="Let us know your enquiries." class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2563eb] min-h-[80px]" value={formState.message} onInput$={e => formState.message = (e.target as HTMLTextAreaElement).value}></textarea>
               </div>
-              <button type="submit" class="w-full bg-[#2563eb] text-white font-bold py-3 rounded-lg hover:bg-[#1d4ed8] transition">Submit</button>
+              <button type="submit" class="w-full bg-[#2563eb] text-white font-bold py-3 rounded-lg hover:bg-[#1d4ed8] transition">{toastState.visible ? 'Submitting...' : 'Submit'}</button>
               <div class="text-xs text-gray-400 mt-2">By continuing, you agree to our <a href="#" class="underline">Terms of Service</a> and <a href="#" class="underline">Privacy Policy</a>.</div>
             </form>
           </div>
@@ -419,6 +425,12 @@ export default component$(() => {
         </div>
         <div class="border-t border-[#22304a] pt-6 text-center text-gray-400 text-sm">Copyright 2023 · Rentcars, All Rights Reserved</div>
       </footer>
+      {toastState.visible && (
+        <div class="toast-success">
+          <div class="font-semibold">🎉 Submitted successfully!</div>
+          <div class="toast-progress"></div>
+        </div>
+      )}
     </div>
   );
 }); 

@@ -38,22 +38,30 @@ export const Sidebar = component$(() => {
 
   const handleLogout = $(async (e: Event) => {
     e.preventDefault();
-  
+
+    // Lấy refresh_token từ cookie
+    function getCookie(name: string) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(';').shift();
+    }
+    const refreshToken = getCookie('refresh_token');
+    console.log(refreshToken);
     try {
       const res = await fetch(`${API_URL}/Auth/logout`, {
         method: 'POST',
         credentials: 'include', 
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({ refreshToken : refreshToken })
       });
-      console.log(res);
       if (res.ok) {
-        // Optional: clear any localStorage tokens or client state
-        localStorage.removeItem('access_token');
-  
+        // Xóa cookie access_token và refresh_token
+        document.cookie = 'access_token=; Max-Age=0; path=/;';
+        document.cookie = 'refresh_token=; Max-Age=0; path=/;';
         // Redirect to login page
-        //window.location.href = '/login';
+        window.location.href = '/login';
       } else {
         // Optional: handle error message from server
         const data = await res.json();

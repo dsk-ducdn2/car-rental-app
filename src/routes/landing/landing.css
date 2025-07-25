@@ -1,0 +1,35 @@
+/* landing.css */
+.toast-success {
+    background-color: #22c55e;
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    animation: fade-in-out 3s ease-in-out forwards;
+    position: fixed;
+    top: 24px;           /* moved to top */
+    right: 24px;         /* stays on the right */
+    z-index: 50;
+    width: 280px;
+  }
+  
+  .toast-progress {
+    height: 8px;
+    background-color: white;
+    border-radius: 9999px;
+    animation: progress 3s linear forwards;
+    margin-top: 8px;
+  }
+  
+  @keyframes progress {
+    from { width: 100%; }
+    to { width: 0%; }
+  }
+  
+  @keyframes fade-in-out {
+    0% { opacity: 0; transform: translateY(20px); }
+    10% { opacity: 1; transform: translateY(0); }
+    90% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(20px); }
+  }
+  

@@ -48,15 +48,18 @@ export default component$(() => {
             RememberMe: remember.value, // gửi thêm RememberMe
           }),
         });
-        if (!res.ok) {
-          throw new Error('Login failed');
-        }
         const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.message || 'Login failed');
+        }
         // Giả sử API trả về { access_token, refresh_token }
         document.cookie = `access_token=${data.access_token}; path=/; secure`;
+        document.cookie = `refresh_token=${data.refresh_token}; path=/; secure; samesite=strict`;
+
         window.location.href = '/dashboard';
       } catch (err: any) {
-        loginError.value = 'Login failed. Please check your credentials.';
+        loginError.value = (err as any)?.message || 'Login failed. Please check your credentials.';
       }
     }
   });
