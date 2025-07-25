@@ -59,7 +59,7 @@ export default component$(() => {
     serverError.value = '';
 
     try {
-      const res = await fetch(`${API_URL}/Users/register`, {
+      const res = await fetch(`${API_URL}/Auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

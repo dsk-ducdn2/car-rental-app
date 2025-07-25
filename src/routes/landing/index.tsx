@@ -15,33 +15,59 @@ export default component$(() => {
     message: '',
   });
 
-  const GOOGLE_SCRIPT_KEY = import.meta.env.VITE_GOOGLE_SCRIPT_KEY;
+  //const GOOGLE_SCRIPT_KEY = import.meta.env.VITE_GOOGLE_SCRIPT_KEY;
+  const API_URL = import.meta.env.VITE_API_URL;
   const handleSubmit = $(async (e: Event) => {
     e.preventDefault();
-    try {
-      const payload = {
-        email: formState.email,
-        phone: formState.phone,
-        firstName: formState.firstName,
-        lastName: formState.lastName,
-        companyName: formState.companyName,
-        companySize: formState.companySize,
-        message: formState.message,
-      };
+    // try {
+    //   const payload = {
+    //     email: formState.email,
+    //     phone: formState.phone,
+    //     firstName: formState.firstName,
+    //     lastName: formState.lastName,
+    //     companyName: formState.companyName,
+    //     companySize: formState.companySize,
+    //     message: formState.message,
+    //   };
 
-      const response = await fetch(`https://script.google.com/macros/s/AKfycbzJWNpS5Sop2NWiI3jA5x1wne2QigTPDZyTQEORzBIBJbKqvC6LNVBb8RV2cYB_-XGG/exec?key=${GOOGLE_SCRIPT_KEY}`, {
-        redirect: "follow",
+    //   const response = await fetch(`https://script.google.com/macros/s/AKfycbzJWNpS5Sop2NWiI3jA5x1wne2QigTPDZyTQEORzBIBJbKqvC6LNVBb8RV2cYB_-XGG/exec?key=${GOOGLE_SCRIPT_KEY}`, {
+    //     redirect: "follow",
+    //     method: 'POST',
+    //     body: JSON.stringify(payload),
+    //     headers: {
+    //       'Content-Type': "text/plain;charset=utf-8"
+    //     }
+    //   });
+    //   const result = await response.text();
+    //   const res = JSON.parse(result);
+    //   // Xử lý kết quả nếu cần
+    // } catch (err) {
+    //   console.log('Error sending data: ' + (err as any)?.message || err);
+    // }
+
+    try {
+      const res = await fetch(`${API_URL}/EnterpriseContacts`, {
         method: 'POST',
-        body: JSON.stringify(payload),
-        headers: {
-          'Content-Type': "text/plain;charset=utf-8"
-        }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formState.email,
+          phoneNumber: formState.phone,
+          firstName: formState.firstName,
+          lastName: formState.lastName,
+          companyName: formState.companyName,
+          companySize: formState.companySize,
+          note: formState.message
+        })
       });
-      const result = await response.text();
-      const res = JSON.parse(result);
-      // Xử lý kết quả nếu cần
+
+      if (res.ok) {
+        window.location.href = '/login';
+      } else {
+        const data = await res.json();
+        console.log(data);
+      }
     } catch (err) {
-      console.log('Error sending data: ' + (err as any)?.message || err);
+      console.log(err);
     }
   });
 
