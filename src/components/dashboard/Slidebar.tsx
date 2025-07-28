@@ -46,13 +46,14 @@ export const Sidebar = component$(() => {
       if (parts.length === 2) return parts.pop()?.split(';').shift();
     }
     const refreshToken = getCookie('refresh_token');
-    console.log(refreshToken);
+    const accessToken = getCookie('access_token');
     try {
       const res = await fetch(`${API_URL}/Auth/logout`, {
         method: 'POST',
         credentials: 'include', 
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
         },
         body: JSON.stringify({ refreshToken : refreshToken })
       });

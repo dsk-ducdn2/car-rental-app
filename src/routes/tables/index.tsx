@@ -4,9 +4,30 @@ import { Sidebar } from '../../components/dashboard/Slidebar';
 import { DashboardHeader } from '../../components/dashboard/DashboardHeader';
 import { useNavigate } from '@builder.io/qwik-city';
 
+interface Author {
+  id: number;
+  avatar: string;
+  name: string;
+  email: string;
+  phoneNumber: string;
+  status: boolean;
+}
+
+// Function to transform API data to match Author interface - moved outside component
+const transformUserData = (users: any[]): Author[] => {
+  return users.map((user, index) => ({
+    id: user.id || index + 1,
+    avatar: user.avatar || `https://randomuser.me/api/portraits/${index % 2 === 0 ? 'men' : 'women'}/${index + 1}.jpg`,
+    name: user.name || user.email?.split('@')[0] || `User ${index + 1}`,
+    email: user.email || `user${index + 1}@example.com`,
+    phoneNumber: user.phoneNumber || user.phone || `+84 ${Math.floor(Math.random() * 900000000) + 100000000}`,
+    status: user.status === "1", // Convert "1" to true (active), "0" to false (deactive)
+  }));
+};
+
 export default component$(() => {
   const nav = useNavigate();
-  const store = useStore<{ authors: any[] }>({ authors: [] });
+  const store = useStore<{ authors: Author[] }>({ authors: [] });
 
   useVisibleTask$(async () => {
     function getCookie(name: string) {
@@ -56,10 +77,11 @@ export default component$(() => {
           return;
         }
         const users = await res.json();
-        store.authors = users;
+        store.authors = transformUserData(users);
         return;
       } else {
         // refresh token không hợp lệ
+         console.log(1);
          window.location.href = '/auth-error';
          return;
       }
@@ -69,7 +91,7 @@ export default component$(() => {
        return;
     }
     const data = await res.json();
-    store.authors = data;
+    store.authors = transformUserData(data);
   });
 
   return (

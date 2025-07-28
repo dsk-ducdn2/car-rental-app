@@ -294,7 +294,6 @@ export default component$(() => {
           </div>
           {/* Right: Register Form */}
           <div class="flex-1 p-8 bg-white flex flex-col justify-center">
-            <div class="text-2xl font-bold mb-6 text-center text-[#393869] tracking-wide">Register</div>
             <form class="space-y-4" preventdefault:submit onSubmit$={handleRegisterSubmit}>
               <div>
                 <input
