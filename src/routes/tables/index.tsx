@@ -2,7 +2,7 @@ import { component$, useStore, useVisibleTask$ } from '@builder.io/qwik';
 import TableAuthors from '../../components/dashboard/TableAuthors';
 import { Sidebar } from '../../components/dashboard/Slidebar';
 import { DashboardHeader } from '../../components/dashboard/DashboardHeader';
-import { useNavigate } from '@builder.io/qwik-city';
+// import { useNavigate } from '@builder.io/qwik-city';
 
 interface Author {
   id: number;
@@ -26,7 +26,7 @@ const transformUserData = (users: any[]): Author[] => {
 };
 
 export default component$(() => {
-  const nav = useNavigate();
+  // const nav = useNavigate();
   const store = useStore<{ authors: Author[] }>({ authors: [] });
 
   useVisibleTask$(async () => {
@@ -45,7 +45,7 @@ export default component$(() => {
         },
       });
     }
-    let token = getCookie('access_token');
+    const token = getCookie('access_token');
     if (!token) {
       window.location.href = '/auth-error';
       return;

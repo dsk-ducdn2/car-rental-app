@@ -6,6 +6,7 @@ import { DashboardProjectsAndOrders } from '../../components/dashboard/Dashboard
 import { DashboardFooter } from '../../components/dashboard/DashboardFooter';
 import { Sidebar } from '../../components/dashboard/Slidebar';
 import { StatsCards } from '../../components/dashboard/StatsCards';
+import { PWAInfo } from '../../components/PWAInfo';
 
 export default component$(() => (
   <div class="flex flex-col md:flex-row min-h-screen bg-[#f8f9fa]">
@@ -17,7 +18,14 @@ export default component$(() => (
       <DashboardHeader />
       <div class="px-2 sm:px-4 md:px-8">
         <StatsCards />
-        <DashboardFeatureCards />
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div class="lg:col-span-2">
+            <DashboardFeatureCards />
+          </div>
+          <div>
+            <PWAInfo />
+          </div>
+        </div>
         <DashboardStatsOverview />
         <DashboardProjectsAndOrders />
         <DashboardFooter />

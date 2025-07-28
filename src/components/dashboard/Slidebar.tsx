@@ -100,8 +100,31 @@ export const Sidebar = component$(() => {
       <nav>
         <ul class="flex flex-col gap-2">
           {menu.map((item, idx) => (
-            item.href ? (
-              <a href={item.href} class="block">
+            <div key={idx}>
+              {item.href ? (
+                <a href={item.href} class="block">
+                  <li
+                    class={[
+                      'flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition shadow-sm',
+                      activeIndex === idx
+                        ? 'bg-cyan-500 text-white font-bold'
+                        : 'bg-white text-gray-700 hover:bg-gray-100 font-medium',
+                      'text-sm',
+                    ]}
+                    title={collapsed.value ? item.label : undefined}
+                  >
+                    <span class={[
+                      'w-8 h-8 flex items-center justify-center rounded-lg',
+                      activeIndex === idx ? 'bg-cyan-500 text-white' : 'bg-gray-100 text-[#344767]'
+                    ]}>
+                      {item.icon}
+                    </span>
+                    {!collapsed.value && (
+                      <span class={activeIndex === idx ? 'text-white font-bold ml-2' : 'text-gray-700 ml-2'}>{item.label}</span>
+                    )}
+                  </li>
+                </a>
+              ) : (
                 <li
                   class={[
                     'flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition shadow-sm',
@@ -122,49 +145,40 @@ export const Sidebar = component$(() => {
                     <span class={activeIndex === idx ? 'text-white font-bold ml-2' : 'text-gray-700 ml-2'}>{item.label}</span>
                   )}
                 </li>
-              </a>
-            ) : (
-              <li
-                class={[
-                  'flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition shadow-sm',
-                  activeIndex === idx
-                    ? 'bg-cyan-500 text-white font-bold'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 font-medium',
-                  'text-sm',
-                ]}
-                title={collapsed.value ? item.label : undefined}
-              >
-                <span class={[
-                  'w-8 h-8 flex items-center justify-center rounded-lg',
-                  activeIndex === idx ? 'bg-cyan-500 text-white' : 'bg-gray-100 text-[#344767]'
-                ]}>
-                  {item.icon}
-                </span>
-                {!collapsed.value && (
-                  <span class={activeIndex === idx ? 'text-white font-bold ml-2' : 'text-gray-700 ml-2'}>{item.label}</span>
-                )}
-              </li>
-            )
+              )}
+            </div>
           ))}
         </ul>
         {/* Account pages */}
         <div class={[collapsed.value ? 'hidden' : 'mt-8 mb-2 px-2 text-xs font-bold text-gray-400 tracking-widest']}>ACCOUNT PAGES</div>
         <ul class="flex flex-col gap-2">
-          {accountPages.map((item) => (
-            item.label === 'Log Out' ? (
-              <li
-                class="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer bg-white hover:bg-gray-100 shadow-sm font-medium text-sm"
-                title={collapsed.value ? item.label : undefined}
-                onClick$={handleLogout}
-                style={{ userSelect: 'none' }}
-              >
-                <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-[#344767]">
-                  {item.icon}
-                </span>
-                {!collapsed.value && <span class="ml-2">{item.label}</span>}
-              </li>
-            ) : item.href ? (
-              <a href={item.href} class="block">
+          {accountPages.map((item, idx) => (
+            <div key={idx}>
+              {item.label === 'Log Out' ? (
+                <li
+                  class="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer bg-white hover:bg-gray-100 shadow-sm font-medium text-sm"
+                  title={collapsed.value ? item.label : undefined}
+                  onClick$={handleLogout}
+                  style={{ userSelect: 'none' }}
+                >
+                  <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-[#344767]">
+                    {item.icon}
+                  </span>
+                  {!collapsed.value && <span class="ml-2">{item.label}</span>}
+                </li>
+              ) : item.href ? (
+                <a href={item.href} class="block">
+                  <li
+                    class="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer bg-white hover:bg-gray-100 shadow-sm font-medium text-sm"
+                    title={collapsed.value ? item.label : undefined}
+                  >
+                    <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-[#344767]">
+                      {item.icon}
+                    </span>
+                    {!collapsed.value && <span class="ml-2">{item.label}</span>}
+                  </li>
+                </a>
+              ) : (
                 <li
                   class="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer bg-white hover:bg-gray-100 shadow-sm font-medium text-sm"
                   title={collapsed.value ? item.label : undefined}
@@ -174,18 +188,8 @@ export const Sidebar = component$(() => {
                   </span>
                   {!collapsed.value && <span class="ml-2">{item.label}</span>}
                 </li>
-              </a>
-            ) : (
-              <li
-                class="flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer bg-white hover:bg-gray-100 shadow-sm font-medium text-sm"
-                title={collapsed.value ? item.label : undefined}
-              >
-                <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 text-[#344767]">
-                  {item.icon}
-                </span>
-                {!collapsed.value && <span class="ml-2">{item.label}</span>}
-              </li>
-            )
+              )}
+            </div>
           ))}
         </ul>
       </nav>

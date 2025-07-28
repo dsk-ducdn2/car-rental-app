@@ -24,7 +24,7 @@ export default component$(() => {
       {/* Hero Section */}
       <div class="relative min-h-[60vh] flex flex-col items-center justify-center bg-gradient-to-br from-indigo-600 to-blue-400 text-white">
         <a href="/landing" class="absolute top-4 right-4 px-4 py-2 bg-white text-indigo-700 font-bold rounded-lg shadow hover:bg-indigo-50 transition z-20">Trang quảng cáo doanh nghiệp</a>
-        <img src="/banner-car.jpg" alt="Car Banner" class="absolute inset-0 w-full h-full object-cover opacity-30" />
+        <img src="/banner-car.jpg" alt="Car Banner" class="absolute inset-0 w-full h-full object-cover opacity-30" width="1200" height="600" />
         <div class="relative z-10 text-center max-w-2xl px-4">
           <h1 class="text-4xl md:text-6xl font-bold mb-4 drop-shadow-lg">Thuê xe tự lái Mioto Demo</h1>
           <p class="text-lg md:text-2xl mb-8 drop-shadow">Đặt xe nhanh, giá tốt, thủ tục đơn giản. Trải nghiệm dịch vụ thuê xe hàng đầu Việt Nam.</p>
@@ -39,22 +39,22 @@ export default component$(() => {
       <section class="py-12 bg-white">
         <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
           <div>
-            <img src="/icons/car.svg" class="mx-auto mb-2 w-12 h-12" />
+            <img src="/icons/car.svg" class="mx-auto mb-2 w-12 h-12" width="48" height="48" />
             <div class="font-bold text-lg">Đa dạng xe</div>
             <div class="text-gray-500">Hơn 100+ mẫu xe, đủ mọi nhu cầu</div>
           </div>
           <div>
-            <img src="/icons/price.svg" class="mx-auto mb-2 w-12 h-12" />
+            <img src="/icons/price.svg" class="mx-auto mb-2 w-12 h-12" width="48" height="48" />
             <div class="font-bold text-lg">Giá tốt</div>
             <div class="text-gray-500">So sánh, chọn giá phù hợp</div>
           </div>
           <div>
-            <img src="/icons/support.svg" class="mx-auto mb-2 w-12 h-12" />
+            <img src="/icons/support.svg" class="mx-auto mb-2 w-12 h-12" width="48" height="48" />
             <div class="font-bold text-lg">Hỗ trợ 24/7</div>
             <div class="text-gray-500">Tư vấn, cứu hộ mọi lúc</div>
           </div>
           <div>
-            <img src="/icons/insurance.svg" class="mx-auto mb-2 w-12 h-12" />
+            <img src="/icons/insurance.svg" class="mx-auto mb-2 w-12 h-12" width="48" height="48" />
             <div class="font-bold text-lg">Bảo hiểm đầy đủ</div>
             <div class="text-gray-500">An tâm di chuyển</div>
           </div>
@@ -93,7 +93,7 @@ export default component$(() => {
           <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             {featuredCars.map((car) => (
               <div class="bg-indigo-50 rounded-lg shadow p-4 text-center" key={car.name}>
-                <img src={car.image} class="w-full h-40 object-cover rounded mb-2" />
+                <img src={car.image} class="w-full h-40 object-cover rounded mb-2" width="300" height="160" />
                 <div class="font-bold text-lg">{car.name}</div>
                 <div class="text-indigo-600 font-semibold mb-2">{car.price.toLocaleString()}đ/ngày</div>
                 <a href="#" class="inline-block px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Xem chi tiết</a>

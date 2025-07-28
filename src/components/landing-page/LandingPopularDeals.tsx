@@ -52,7 +52,7 @@ export default component$(() => {
           {cars.map((car) => (
             <div key={car.id} class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
               <div class="relative">
-                <img src={car.image} alt={car.name} class="w-full h-48 object-cover" />
+                <img src={car.image} alt={car.name} class="w-full h-48 object-cover" width="300" height="192" />
                 <div class="absolute top-3 right-3 white rounded-full p-1">
                   <svg width="20" height="20" fill="#facc15" viewBox="0 0 20 20">
                     <polygon points="10 12.597 7.64 14,12.14 15.82,19 15.274.18 19.2 6,12.14 0.49 0.64" />

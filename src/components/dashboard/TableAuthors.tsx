@@ -269,6 +269,8 @@ export default component$<TableAuthorsProps>(({ authors }) => {
                       src={author.avatar || 'https://via.placeholder.com/40x40'} 
                       alt={author.name} 
                       class="w-10 h-10 rounded-full object-cover border" 
+                      width="40" 
+                      height="40" 
                     />
                     <div>
                       <div class="font-semibold text-gray-800">{author.name}</div>

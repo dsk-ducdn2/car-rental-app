@@ -24,36 +24,135 @@ export default defineConfig(({ command, mode }): UserConfig => {
   return {
     plugins: [qwikCity(), qwikVite(), tsconfigPaths(), tailwindcss(), VitePWA({
       registerType: 'autoUpdate',
+      includeAssets: ['favicon.svg', 'icons/*.png'],
       manifest: {
-        name: 'Qwik PWA App',
-        short_name: 'QwikPWA',
-        start_url: '.',
+        name: 'Car Rental App',
+        short_name: 'CarRental',
+        description: 'Ứng dụng thuê xe trực tuyến - Đặt xe dễ dàng, nhanh chóng và an toàn',
+        start_url: '/',
         display: 'standalone',
-        background_color: '#fff',
-        theme_color: '#4f46e5',
-        description: 'A Qwik project app with PWA support.',
+        background_color: '#1f2937',
+        theme_color: '#3b82f6',
+        orientation: 'portrait-primary',
+        scope: '/',
+        lang: 'vi',
+        categories: ['travel', 'transportation', 'business'],
         icons: [
+          {
+            src: '/icons/icon-72x72.png',
+            sizes: '72x72',
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: '/icons/icon-96x96.png',
+            sizes: '96x96',
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: '/icons/icon-128x128.png',
+            sizes: '128x128',
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: '/icons/icon-144x144.png',
+            sizes: '144x144',
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: '/icons/icon-152x152.png',
+            sizes: '152x152',
+            type: 'image/png',
+            purpose: 'any'
+          },
           {
             src: '/icons/icon-192x192.png',
             sizes: '192x192',
             type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: '/icons/icon-384x384.png',
+            sizes: '384x384',
+            type: 'image/png',
+            purpose: 'any'
           },
           {
             src: '/icons/icon-512x512.png',
             sizes: '512x512',
             type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: '/icons/icon-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable'
           },
           {
             src: '/icons/icon-512x512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable',
-          },
+            purpose: 'maskable'
+          }
         ],
+        screenshots: [
+          {
+            src: '/images/dashboard.png',
+            sizes: '1280x720',
+            type: 'image/png',
+            form_factor: 'wide',
+            label: 'Dashboard của ứng dụng thuê xe'
+          }
+        ],
+        shortcuts: [
+          {
+            name: 'Đặt xe',
+            short_name: 'Đặt xe',
+            description: 'Đặt xe nhanh chóng',
+            url: '/dashboard',
+            icons: [
+              {
+                src: '/icons/icon-96x96.png',
+                sizes: '96x96'
+              }
+            ]
+          }
+        ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365
+              }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'gstatic-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365
+              }
+            }
+          }
+        ]
       },
+      devOptions: {
+        enabled: true
+      }
     })],
     // This tells Vite which dependencies to pre-build in dev mode.
     optimizeDeps: {

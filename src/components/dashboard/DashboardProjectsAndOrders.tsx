@@ -159,13 +159,13 @@ export const DashboardProjectsAndOrders = component$(() => (
             </tr>
           </thead>
           <tbody>
-            {projects.map((p, i) => (
-              <tr class="border-b border-gray-200 last:border-b-0">
+            {projects.map((p) => (
+              <tr key={p.name} class="border-b border-gray-200 last:border-b-0">
                 <td class="py-3 flex items-center gap-2 font-semibold">{p.logo}{p.name}</td>
                 <td class="py-3">
                   <div class="flex -space-x-2">
                     {p.members.map((m) => (
-                      <img src={membersAvatars[m-1]} class="w-7 h-7 rounded-full border-2 border-white" />
+                      <img key={m} src={membersAvatars[m-1]} class="w-7 h-7 rounded-full border-2 border-white" width="28" height="28" />
                     ))}
                   </div>
                 </td>
@@ -186,8 +186,8 @@ export const DashboardProjectsAndOrders = component$(() => (
       <div class="font-bold mb-2">Orders overview</div>
       <div class="text-green-500 text-sm font-semibold mb-4">↑ 24% <span class="text-gray-400 font-normal">THIS MONTH</span></div>
       <ul class="space-y-4">
-        {orders.map((o) => (
-          <li class="flex items-start gap-2">
+        {orders.map((o, index) => (
+          <li key={index} class="flex items-start gap-2">
             <div>{o.icon}</div>
             <div>
               <div class={`font-semibold text-sm ${o.color}`}>{o.text}</div>

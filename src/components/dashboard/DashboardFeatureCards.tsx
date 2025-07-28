@@ -23,6 +23,8 @@ export const DashboardFeatureCards = component$(() => (
         alt="Rocket"
         class="h-48 object-contain"
         style={{ filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.10))' }}
+        width="300"
+        height="192"
       />
     </div>
     {/* Card 3 */}

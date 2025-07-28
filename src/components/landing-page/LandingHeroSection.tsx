@@ -12,10 +12,10 @@ export default component$(() => (
       </p>
       <div class="flex gap-3 mb-8">
         <a href="#" aria-label="Get it on Google Play">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play" class="h-12" />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play" class="h-12" width="135" height="40" />
         </a>
         <a href="#" aria-label="Download on the App Store">
-          <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="App Store" class="h-12" />
+          <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="App Store" class="h-12" width="135" height="40" />
         </a>
       </div>
       <div class="hidden md:block h-8"></div>
@@ -28,6 +28,8 @@ export default component$(() => (
         alt="Porsche Car"
         class="relative z-10 w-[420px] max-w-full drop-shadow-2xl"
         style={{ filter: 'drop-shadow(0 8px 32px rgba(37,99,235,0.18))' }}
+        width="420"
+        height="280"
       />
     </div>
   </section>

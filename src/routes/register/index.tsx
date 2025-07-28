@@ -143,7 +143,7 @@ export default component$(() => {
               onChange$={() => (agree.value = !agree.value)}
               class="accent-[#393869] w-5 h-5 rounded border-gray-300 mr-3 transition-all duration-150"
             />
-            <label htmlFor="agree" class="text-sm select-none">
+            <label for="agree" class="text-sm select-none">
               I AGREE THE <span class="font-bold text-[#393869]">TERMS AND CONDITIONS</span>
             </label>
           </div>

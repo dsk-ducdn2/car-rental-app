@@ -215,7 +215,7 @@ export default component$(() => {
           <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Card 1 */}
             <div class="bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center text-center">
-              <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="User 1" class="w-24 h-24 rounded-full object-cover mb-4 border-4 border-white shadow" />
+              <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="User 1" class="w-24 h-24 rounded-full object-cover mb-4 border-4 border-white shadow" width="96" height="96" />
               <div class="flex items-center gap-1 mb-2">
                 <span class="text-3xl font-bold">5.0</span>
                 <span class="text-gray-500">stars</span>
@@ -235,7 +235,7 @@ export default component$(() => {
             </div>
             {/* Card 2 */}
             <div class="bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center text-center">
-              <img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=facearea&w=256&q=80" alt="User 2" class="w-24 h-24 rounded-full object-cover mb-4 border-4 border-white shadow" />
+              <img src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=facearea&w=256&q=80" alt="User 2" class="w-24 h-24 rounded-full object-cover mb-4 border-4 border-white shadow" width="96" height="96" />
               <div class="flex items-center gap-1 mb-2">
                 <span class="text-3xl font-bold">5.0</span>
                 <span class="text-gray-500">stars</span>
@@ -255,7 +255,7 @@ export default component$(() => {
             </div>
             {/* Card 3 */}
             <div class="bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center text-center">
-              <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=facearea&w=256&q=80" alt="User 3" class="w-24 h-24 rounded-full object-cover mb-4 border-4 border-white shadow" />
+              <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=facearea&w=256&q=80" alt="User 3" class="w-24 h-24 rounded-full object-cover mb-4 border-4 border-white shadow" width="96" height="96" />
               <div class="flex items-center gap-1 mb-2">
                 <span class="text-3xl font-bold">5.0</span>
                 <span class="text-gray-500">stars</span>
@@ -339,7 +339,7 @@ export default component$(() => {
                   onChange$={() => (agree.value = !agree.value)}
                   class="accent-[#393869] w-5 h-5 rounded border-gray-300 mr-3 transition-all duration-150"
                 />
-                <label htmlFor="agree" class="text-sm select-none">
+                <label for="agree" class="text-sm select-none">
                   I AGREE THE <span class="font-bold text-[#393869]">TERMS AND CONDITIONS</span>
                 </label>
               </div>
@@ -370,17 +370,17 @@ export default component$(() => {
             <p class="text-gray-600 mb-6">For faster, easier booking and exclusive deals.</p>
             <div class="flex gap-3 mb-8">
               <a href="#" aria-label="Get it on Google Play">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play" class="h-12" />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play" class="h-12" width="135" height="40" />
               </a>
               <a href="#" aria-label="Download on the App Store">
-                <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="App Store" class="h-12" />
+                <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="App Store" class="h-12" width="135" height="40" />
               </a>
             </div>
           </div>
           {/* Right - Phone with car */}
           <div class="flex-1 flex justify-center items-center relative z-10">
-            <img src="https://stimg.cardekho.com/images/carexteriorimages/930x620/Porsche/911/11757/1717680690776/front-left-side-47.jpg" alt="Phone" class="w-[320px] md:w-[400px] z-10" style={{ boxShadow: '0 8px 32px rgba(37,99,235,0.10)' }} />
-            <img src="https://stimg.cardekho.com/images/carexteriorimages/930x620/Porsche/911/11757/1717680690776/front-left-side-47.jpg" alt="Car" class="absolute top-1/2 left-1/2 w-[220px] md:w-[260px] -translate-x-1/2 -translate-y-1/2 z-20" />
+            <img src="https://stimg.cardekho.com/images/carexteriorimages/930x620/Porsche/911/11757/1717680690776/front-left-side-47.jpg" alt="Phone" class="w-[320px] md:w-[400px] z-10" style={{ boxShadow: '0 8px 32px rgba(37,99,235,0.10)' }} width="400" height="267" />
+            <img src="https://stimg.cardekho.com/images/carexteriorimages/930x620/Porsche/911/11757/1717680690776/front-left-side-47.jpg" alt="Car" class="absolute top-1/2 left-1/2 w-[220px] md:w-[260px] -translate-x-1/2 -translate-y-1/2 z-20" width="260" height="173" />
           </div>
           {/* Background shape */}
           <svg class="absolute left-0 top-0 w-full h-full z-0" viewBox="0 0 1440 320" fill="none">

@@ -72,7 +72,7 @@ export default component$(() => {
           <div class="text-gray-500 text-center mb-6 text-base">Enter your email and password to sign in</div>
           {/* Email */}
           <div class="mb-4">
-            <label class="block font-semibold mb-1" htmlFor="email">Email</label>
+            <label class="block font-semibold mb-1" for="email">Email</label>
             <input
               id="email"
               type="text"
@@ -90,7 +90,7 @@ export default component$(() => {
           </div>
           {/* Password */}
           <div class="mb-4">
-            <label class="block font-semibold mb-1" htmlFor="password">Password</label>
+            <label class="block font-semibold mb-1" for="password">Password</label>
             <input
               id="password"
               type="password"
@@ -119,7 +119,7 @@ export default component$(() => {
               onChange$={$(() => (remember.value = !remember.value))}
               class="hidden"
             />
-            <label htmlFor="remember" class="relative inline-block w-12 h-6 mr-3 align-middle select-none cursor-pointer">
+            <label for="remember" class="relative inline-block w-12 h-6 mr-3 align-middle select-none cursor-pointer">
               <span
                 class={[
                   'block w-12 h-6 rounded-full transition-colors duration-200',
