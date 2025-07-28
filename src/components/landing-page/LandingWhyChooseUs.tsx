@@ -5,7 +5,7 @@ export default component$(() => (
     <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-12 px-4">
       {/* Left: Car image */}
       <div class="flex-1 flex justify-center items-center relative">
-        <img src="https://cdn.motor1.com/images/mgl/vxoJ0Y/s1/2023-audi-r8-v10-gt-rwd.jpg" alt="Audi R8" class="w-full max-w-md rounded-2xl shadow-xl" />
+        <img src="/images/dashboard.png" alt="Dashboard" class="w-full max-w-md rounded-2xl shadow-xl" />
         <svg class="absolute -z-10 left-0 top-0 w-full h-full" viewBox="0 0 600 600" fill="none"><polygon points="0,0 600,0 600,600 0,300" fill="#e6f0ff" /></svg>
       </div>
       {/* Right: Content */}
