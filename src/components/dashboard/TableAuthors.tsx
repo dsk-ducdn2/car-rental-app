@@ -1,4 +1,5 @@
 import { component$, useSignal, $, useComputed$ } from '@builder.io/qwik';
+import { fetchWithAuth } from '../../utils/api';
 
 interface Author {
   id: number;
@@ -21,6 +22,7 @@ export default component$<TableAuthorsProps>(({ authors }) => {
   const showNotification = useSignal(false);
   const notificationMessage = useSignal('');
   const notificationType = useSignal<'success' | 'error'>('success');
+  const API_URL = import.meta.env.VITE_API_URL;
   
   // Use useComputed$ to ensure paginatedAuthors updates when currentPage or authors change
   const totalPages = useComputed$(() => Math.ceil((authors?.length || 0) / ITEMS_PER_PAGE));
@@ -58,17 +60,14 @@ export default component$<TableAuthorsProps>(({ authors }) => {
     }
     
     try {
-      const response = await fetch('https://localhost:44391/api/Users/changeStatusUser', {
+      const response = await fetchWithAuth(`${API_URL}/Users/changeStatusUser`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(selectedUserId.value),
       });
-      console.log(response);
       if (response.status === 200) {
-        console.log("here");
         notificationMessage.value = 'Change status successfully';
         notificationType.value = 'success';
         showNotification.value = true;
@@ -83,10 +82,6 @@ export default component$<TableAuthorsProps>(({ authors }) => {
         setTimeout(() => {
           showNotification.value = false;
         }, 3000);
-      }
-      else if (response.status === 401) {
-        window.location.href = '/auth-error';
-        return;
       }
       else {
         notificationMessage.value = 'Failed to change status';

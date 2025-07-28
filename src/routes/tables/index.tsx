@@ -2,6 +2,7 @@ import { component$, useStore, useVisibleTask$ } from '@builder.io/qwik';
 import TableAuthors from '../../components/dashboard/TableAuthors';
 import { Sidebar } from '../../components/dashboard/Slidebar';
 import { DashboardHeader } from '../../components/dashboard/DashboardHeader';
+import { fetchWithAuth } from '../../utils/api';
 // import { useNavigate } from '@builder.io/qwik-city';
 
 interface Author {
@@ -28,68 +29,9 @@ const transformUserData = (users: any[]): Author[] => {
 export default component$(() => {
   // const nav = useNavigate();
   const store = useStore<{ authors: Author[] }>({ authors: [] });
-
+  const API_URL = import.meta.env.VITE_API_URL;
   useVisibleTask$(async () => {
-    function getCookie(name: string) {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop()?.split(';').shift();
-    }
-    async function setCookie(name: string, value: string) {
-      document.cookie = `${name}=${value}; path=/; secure; samesite=strict`;
-    }
-    async function fetchUsers(token: string) {
-      return fetch('https://localhost:44391/api/Users', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-    }
-    const token = getCookie('access_token');
-    if (!token) {
-      window.location.href = '/auth-error';
-      return;
-    }
-    let res = await fetchUsers(token);
-    if (res.status === 401 || res.status === 403) {
-      // Thử refresh token
-      const refreshToken = getCookie('refresh_token');
-      console.log(refreshToken);
-      if (!refreshToken) {
-        window.location.href = '/auth-error';
-        return;
-      }
-      const refreshRes = await fetch('https://localhost:44391/api/Auth/refresh', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: refreshToken }),
-      });
-      if (refreshRes.ok) {
-        const data = await refreshRes.json();
-        console.log(1);
-        // Lưu lại token mới
-        await setCookie('access_token', data.access_token);
-        await setCookie('refresh_token', data.refresh_token);
-        // Gọi lại API users với access_token mới
-        res = await fetchUsers(data.access_token);
-        if (!res.ok) {
-          window.location.href = '/auth-error';
-          return;
-        }
-        const users = await res.json();
-        store.authors = transformUserData(users);
-        return;
-      } else {
-        // refresh token không hợp lệ
-         console.log(1);
-         window.location.href = '/auth-error';
-         return;
-      }
-    }
-    if (!res.ok) {
-       window.location.href = '/auth-error';
-       return;
-    }
+    const res = await fetchWithAuth(`${API_URL}/Users`);
     const data = await res.json();
     store.authors = transformUserData(data);
   });
