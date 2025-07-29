@@ -21,7 +21,7 @@ const transformUserData = (users: any[]): Author[] => {
     avatar: user.avatar || `https://randomuser.me/api/portraits/${index % 2 === 0 ? 'men' : 'women'}/${index + 1}.jpg`,
     name: user.name || user.email?.split('@')[0] || `User ${index + 1}`,
     email: user.email || `user${index + 1}@example.com`,
-    phoneNumber: user.phoneNumber || user.phone || `+84 ${Math.floor(Math.random() * 900000000) + 100000000}`,
+    phoneNumber: user.phoneNumber || user.phone,
     status: user.status === "1", // Convert "1" to true (active), "0" to false (deactive)
   }));
 };

@@ -113,8 +113,9 @@ export default component$<TableAuthorsProps>(({ authors }) => {
     selectedUserId.value = null;
   });
 
-  const handleEdit = $((authorId: number) => {
+  const handleEdit = $(async (authorId: number) => {
     // Edit logic here
+    window.location.href = `/edit-user/${authorId}`;
     console.log(`Edit author ${authorId}`);
   });
 
@@ -260,13 +261,13 @@ export default component$<TableAuthorsProps>(({ authors }) => {
               paginatedAuthors.value.map((author: Author, idx: number) => (
                 <tr key={idx} class="border-b border-gray-200 hover:bg-gray-50">
                   <td class="py-4 px-6 flex items-center gap-3">
-                    <img 
+                    {/* <img 
                       src={author.avatar || 'https://via.placeholder.com/40x40'} 
                       alt={author.name} 
                       class="w-10 h-10 rounded-full object-cover border" 
                       width="40" 
                       height="40" 
-                    />
+                    /> */}
                     <div>
                       <div class="font-semibold text-gray-800">{author.name}</div>
                     </div>
