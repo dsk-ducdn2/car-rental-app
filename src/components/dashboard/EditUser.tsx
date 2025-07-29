@@ -2,10 +2,12 @@ import {
   component$,
   useResource$,
   useSignal,
+  useStore,
   Resource,
   $,
 } from '@builder.io/qwik';
 import { fetchWithAuth } from '~/utils/api';
+import '../../routes/index.css';
 
 interface Author {
   id: number;
@@ -32,6 +34,9 @@ export default component$((props: { user: Author & { roleId?: number } }) => {
   const phoneNumber = useSignal(user.phone);
   const selectedCompany = useSignal<string | null>(user.companyId ? String(user.companyId) : null);
   const selectedRole = useSignal(user.roleId ? String(user.roleId) : '2');
+  const toastState = useStore({
+      visible: false,
+    });
 
   // Resource to fetch companies
   const companiesResource = useResource$<Company[]>(async () => {
@@ -52,14 +57,25 @@ export default component$((props: { user: Author & { roleId?: number } }) => {
         roleId: selectedRole.value ? Number(selectedRole.value) : undefined,
       };
       console.log('Submitting user data:', body);
-      const res = await fetchWithAuth(`${API_URL}/Users/${user.id}`, {
-        method: 'PUT',
+      const isUpdate = !!user?.id;
+      const url = isUpdate
+        ? `${API_URL}/Users/${user.id}`   // PUT: Update
+        : `${API_URL}/Users`;            // POST: Create
+
+      const method = isUpdate ? 'PUT' : 'POST';
+
+      const res = await fetchWithAuth(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
 
+
       if (res.ok) {
-        alert('User updated successfully');
+        toastState.visible = true;
+        setTimeout(() => {
+          toastState.visible = false;
+        }, 2000);
       } else {
         alert('Failed to update user');
       }
@@ -169,6 +185,12 @@ export default component$((props: { user: Author & { roleId?: number } }) => {
           Update User
         </button>
       </form>
+      {toastState.visible && (
+        <div class="toast-success">
+          <div class="font-semibold">Update successful!</div>
+          <div class="toast-progress"></div>
+        </div>
+      )}
     </div>
   );
 });

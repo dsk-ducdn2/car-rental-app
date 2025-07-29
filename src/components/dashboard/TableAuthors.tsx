@@ -23,7 +23,13 @@ export default component$<TableAuthorsProps>(({ authors }) => {
   const notificationMessage = useSignal('');
   const notificationType = useSignal<'success' | 'error'>('success');
   const API_URL = import.meta.env.VITE_API_URL;
-  
+
+  // Thêm state cho dialog xóa và loading bar
+  const showDeleteDialog = useSignal(false);
+  const deletingUserId = useSignal<number | null>(null);
+  const showProgressBar = useSignal(false);
+  const progress = useSignal(0);
+
   // Use useComputed$ to ensure paginatedAuthors updates when currentPage or authors change
   const totalPages = useComputed$(() => Math.ceil((authors?.length || 0) / ITEMS_PER_PAGE));
   
@@ -40,24 +46,6 @@ export default component$<TableAuthorsProps>(({ authors }) => {
 
   const confirmStatusChange = $(async () => {
     if (selectedUserId.value === null) return;
-    
-    // Get token from cookies
-    function getCookie(name: string) {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop()?.split(';').shift();
-    }
-    
-    const token = getCookie('access_token');
-    if (!token) {
-      notificationMessage.value = 'Authentication token not found';
-      notificationType.value = 'error';
-      showNotification.value = true;
-      setTimeout(() => {
-        showNotification.value = false;
-      }, 3000);
-      return;
-    }
     
     try {
       const response = await fetchWithAuth(`${API_URL}/Users/changeStatusUser`, {
@@ -120,8 +108,58 @@ export default component$<TableAuthorsProps>(({ authors }) => {
   });
 
   const handleDelete = $((authorId: number) => {
-    // Delete logic here
-    console.log(`Delete author ${authorId}`);
+    deletingUserId.value = authorId;
+    showDeleteDialog.value = true;
+  });
+
+  const cancelDelete = $(() => {
+    showDeleteDialog.value = false;
+    deletingUserId.value = null;
+  });
+
+  const confirmDelete = $(async () => {
+    if (deletingUserId.value === null) return;
+
+    try {
+      const response = await fetchWithAuth(`${API_URL}/Users/${deletingUserId.value}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (response.status === 200) {
+        notificationMessage.value = 'Đã xóa thành công';
+        notificationType.value = 'success';
+        showNotification.value = true;
+
+        // Xóa user khỏi danh sách (nếu muốn cập nhật UI ngay)
+        const idx = authors.findIndex(a => a.id === deletingUserId.value);
+        if (idx !== -1) {
+          authors.splice(idx, 1);
+        }
+
+        setTimeout(() => {
+          showNotification.value = false;
+        }, 3000);
+      } else {
+        notificationMessage.value = 'Failed to delete user';
+        notificationType.value = 'error';
+        showNotification.value = true;
+        setTimeout(() => {
+          showNotification.value = false;
+        }, 3000);
+      }
+    } catch (error) {
+      notificationMessage.value = 'Error occurred while deleting user';
+      notificationType.value = 'error';
+      showNotification.value = true;
+      setTimeout(() => {
+        showNotification.value = false;
+      }, 3000);
+    }
+
+    showDeleteDialog.value = false;
+    deletingUserId.value = null;
   });
 
   const handlePreviousPage = $(() => {
@@ -194,7 +232,7 @@ export default component$<TableAuthorsProps>(({ authors }) => {
         </div>
       )}
 
-      {/* Confirmation Dialog */}
+      {/* Confirmation Dialog (Change Status) */}
       {showConfirmDialog.value && (
         <div 
           class="fixed inset-0 flex items-center justify-center z-50"
@@ -244,6 +282,68 @@ export default component$<TableAuthorsProps>(({ authors }) => {
           </div>
         </div>
       )}
+
+      {/* Confirmation Dialog (Delete) */}
+      {showDeleteDialog.value && (
+        <div 
+          class="fixed inset-0 flex items-center justify-center z-50"
+          style="background-color: rgba(0, 0, 0, 0.3); backdrop-filter: blur(2px);"
+        >
+          <div class="bg-white rounded-lg p-6 max-w-sm w-full mx-4 relative shadow-2xl">
+            {/* Close button */}
+            <button
+              onClick$={cancelDelete}
+              class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+            
+            {/* Warning icon */}
+            <div class="flex justify-center mb-4">
+              <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+              </div>
+            </div>
+            
+            {/* Title */}
+            <h3 class="text-lg font-semibold text-center mb-2">Delete User</h3>
+            
+            {/* Message */}
+            <p class="text-gray-600 text-center mb-6">Are you sure you want to delete this user?</p>
+            
+            {/* Buttons */}
+            <div class="flex gap-3 justify-center">
+              <button
+                onClick$={cancelDelete}
+                class="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick$={confirmDelete}
+                class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <div class="flex justify-start mb-4 px-6">
+      <button
+        onClick$={() => (window.location.href = '/create-user')}
+        class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg shadow transition duration-150"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+        </svg>
+        Create User
+      </button>
+      </div>
 
       <div class="overflow-x-auto">
         <table class="min-w-full bg-white rounded-lg">
@@ -349,4 +449,4 @@ export default component$<TableAuthorsProps>(({ authors }) => {
       </div>
     </div>
   );
-}); 
+});

@@ -22,9 +22,6 @@ export default component$(() => (
           <div class="lg:col-span-2">
             <DashboardFeatureCards />
           </div>
-          <div>
-            <PWAInfo />
-          </div>
         </div>
         <DashboardStatsOverview />
         <DashboardProjectsAndOrders />

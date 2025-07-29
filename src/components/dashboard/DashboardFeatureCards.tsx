@@ -1,4 +1,5 @@
 import { component$ } from '@builder.io/qwik';
+import { PWAInfo } from '../../components/PWAInfo';
 
 export const DashboardFeatureCards = component$(() => (
   <div class="flex flex-col md:flex-row gap-2 md:gap-6 mt-8">
@@ -38,6 +39,10 @@ export const DashboardFeatureCards = component$(() => (
       <a href="#" class="text-sm font-semibold text-white flex items-center gap-1">
         READ MORE <span class="ml-1">→</span>
       </a>
+    </div>
+
+    <div class="bg-[#424242] rounded-2xl shadow p-4 md:p-8 flex-1 flex flex-col justify-between min-w-full md:min-w-[320px]">
+      <PWAInfo />
     </div>
   </div>
 ));
