@@ -4,9 +4,11 @@ import {
   useStore,
   $,
   useVisibleTask$,
+  useComputed$,
 } from '@builder.io/qwik';
 import { fetchWithAuth } from '~/utils/api';
 import '../../routes/index.css';
+import { jwtDecode } from 'jwt-decode';
 
 interface Author {
   id?: number;
@@ -41,6 +43,10 @@ export default component$((props: { user: Author }) => {
   const companies = useSignal<Company[]>([]);
   const loadingCompanies = useSignal(true);
   const errorCompanies = useSignal(false);
+  const userId = useSignal<string | undefined>(undefined);
+  const isEditingSelf = useComputed$(() =>
+    user?.id?.toString() === userId.value
+  );
 
   const formErrors = useStore({
     name: '',
@@ -65,6 +71,25 @@ export default component$((props: { user: Author }) => {
     }
   });
 
+  useVisibleTask$(() => {
+      function getCookie(name: string) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop()?.split(';').shift();
+      }
+  
+      const accessToken = getCookie('access_token');
+      if (accessToken) {
+        try {
+          const decoded = jwtDecode<any>(accessToken);
+          const userIdFromToken = decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+          userId.value = userIdFromToken;
+        } catch (err) {
+          console.error('Invalid access token', err);
+        }
+      }
+    });
+
   const handleSubmit = $(async (e: Event) => {
     e.preventDefault();
     formErrors.name = '';
@@ -86,10 +111,10 @@ export default component$((props: { user: Author }) => {
       formErrors.phone = 'Phone number is required';
       hasError = true;
     }
-    if (!user?.id && !password.value.trim()) {
+    if (!user?.id || isEditingSelf && !password.value.trim()) {
       formErrors.password = 'Password is required';
       hasError = true;
-    } else if (!user?.id && password.value.length < 6) {
+    } else if (!user?.id || isEditingSelf && password.value.length < 6) {
       formErrors.password = 'Password must be at least 6 characters';
       hasError = true;
     }
@@ -102,15 +127,15 @@ export default component$((props: { user: Author }) => {
       phone: phoneNumber.value,
       companyId: selectedCompany.value ?? null,
       roleId: selectedRole.value ? Number(selectedRole.value) : undefined,
-      ...(user?.id ? {} : { password: password.value }),
+      ...((!user?.id || isEditingSelf) ? { password: password.value } : {})
     };
 
     try {
-      const isUpdate = !!user?.id;
+      const isUpdate = !!user?.id  || isEditingSelf;
+      console.log('Submitting form:', body);
       const url = isUpdate
         ? `${API_URL}/Users/${user.id}`
         : `${API_URL}/Users`;
-      console.log('Submitting data:', body);
       const method = isUpdate ? 'PUT' : 'POST';
       const res = await fetchWithAuth(url, {
         method,
@@ -147,7 +172,11 @@ export default component$((props: { user: Author }) => {
         class="bg-white shadow-lg rounded-lg p-8 w-full max-w-xl space-y-6 border border-gray-200"
       >
         <h2 class="text-2xl font-bold text-gray-800 text-center">
-          {user?.id ? 'Edit User' : 'Create User'}
+          {user?.id
+          ? isEditingSelf.value
+            ? 'Edit Profile'
+            : 'Edit User'
+          : 'Create User'}
         </h2>
 
         <div>
@@ -191,7 +220,7 @@ export default component$((props: { user: Author }) => {
           )}
         </div>
 
-        {!user?.id && (
+        {!user?.id || isEditingSelf && (
           <div>
             <label class="block text-sm font-semibold mb-1 text-gray-700">Password</label>
             <input
