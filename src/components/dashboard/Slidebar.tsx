@@ -20,14 +20,7 @@ const menu = [
   ) },
 ];
 
-const accountPages = [
-  { label: 'Profile', icon: (
-    <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="currentColor"/><rect x="4" y="16" width="16" height="4" rx="2" fill="currentColor"/></svg>
-  ) },
-  { label: 'Log Out', icon: (
-    <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" fill="currentColor"/><path d="M9 12h6M12 9l3 3-3 3" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  ), href: '/logout' },
-];
+
 
 type JwtPayload = {
   role?: string;
@@ -40,10 +33,20 @@ export const Sidebar = component$(() => {
   const currentPath = loc.url.pathname;
   const collapsed = useSignal(false); // trạng thái thu/phóng
   const role = useSignal<string | undefined>(undefined);
+  const userId = useSignal<string | undefined>(undefined);
   // Tìm index của menu item có href khớp với url hiện tại
   // Lọc menu theo role
   const filteredMenu = menu.filter(item => !(item.label === 'Users' && role.value === 'user'));
   const activeIndex = filteredMenu.findIndex(item => item.href && currentPath.startsWith(item.href));
+
+  const accountPages = [
+  { label: 'Profile', icon: (
+    <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="currentColor"/><rect x="4" y="16" width="16" height="4" rx="2" fill="currentColor"/></svg>
+  ), href: `/profile/${userId.value}` },
+  { label: 'Log Out', icon: (
+    <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" fill="currentColor"/><path d="M9 12h6M12 9l3 3-3 3" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  ), href: '/logout' },
+];
 
   useVisibleTask$(() => {
     function getCookie(name: string) {
@@ -58,6 +61,8 @@ export const Sidebar = component$(() => {
         const decoded = jwtDecode<any>(accessToken);
         const roleFromToken = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
         role.value = roleFromToken;
+        const userIdFromToken = decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+        userId.value = userIdFromToken;
       } catch (err) {
         console.error('Invalid access token', err);
       }

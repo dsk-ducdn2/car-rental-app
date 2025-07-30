@@ -34,6 +34,7 @@ export default component$((props: { user: Author }) => {
     user.companyId ? String(user.companyId) : null
   );
   const selectedRole = useSignal(user.roleId ? String(user.roleId) : '2');
+  const password = useSignal('');
 
   const toastState = useStore({ visible: false });
 
@@ -45,6 +46,7 @@ export default component$((props: { user: Author }) => {
     name: '',
     email: '',
     phone: '',
+    password: '',
   });
 
   const formState = useStore({
@@ -84,6 +86,13 @@ export default component$((props: { user: Author }) => {
       formErrors.phone = 'Phone number is required';
       hasError = true;
     }
+    if (!user?.id && !password.value.trim()) {
+      formErrors.password = 'Password is required';
+      hasError = true;
+    } else if (!user?.id && password.value.length < 6) {
+      formErrors.password = 'Password must be at least 6 characters';
+      hasError = true;
+    }
 
     if (hasError) return;
 
@@ -93,6 +102,7 @@ export default component$((props: { user: Author }) => {
       phone: phoneNumber.value,
       companyId: selectedCompany.value ?? null,
       roleId: selectedRole.value ? Number(selectedRole.value) : undefined,
+      ...(user?.id ? {} : { password: password.value }),
     };
 
     try {
@@ -100,7 +110,7 @@ export default component$((props: { user: Author }) => {
       const url = isUpdate
         ? `${API_URL}/Users/${user.id}`
         : `${API_URL}/Users`;
-
+      console.log('Submitting data:', body);
       const method = isUpdate ? 'PUT' : 'POST';
       const res = await fetchWithAuth(url, {
         method,
@@ -180,6 +190,21 @@ export default component$((props: { user: Author }) => {
             <div class="text-red-600 text-sm mt-1">{formErrors.phone}</div>
           )}
         </div>
+
+        {!user?.id && (
+          <div>
+            <label class="block text-sm font-semibold mb-1 text-gray-700">Password</label>
+            <input
+              type="password"
+              value={password.value}
+              onInput$={(e) => (password.value = (e.target as HTMLInputElement).value)}
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            {formErrors.password && (
+              <div class="text-red-600 text-sm mt-1">{formErrors.password}</div>
+            )}
+          </div>
+        )}
 
         <div>
           <label class="block text-sm font-semibold mb-1 text-gray-700">Company</label>

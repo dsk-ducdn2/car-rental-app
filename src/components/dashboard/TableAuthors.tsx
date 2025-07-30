@@ -1,5 +1,6 @@
-import { component$, useSignal, $, useComputed$ } from '@builder.io/qwik';
+import { component$, useSignal, $, useComputed$, useVisibleTask$ } from '@builder.io/qwik';
 import { fetchWithAuth } from '../../utils/api';
+import { jwtDecode } from 'jwt-decode';
 
 interface Author {
   id: number;
@@ -23,24 +24,50 @@ export default component$<TableAuthorsProps>(({ authors }) => {
   const notificationMessage = useSignal('');
   const notificationType = useSignal<'success' | 'error'>('success');
   const API_URL = import.meta.env.VITE_API_URL;
+  const userId = useSignal<string | undefined>(undefined);
 
   // Thêm state cho dialog xóa và loading bar
   const showDeleteDialog = useSignal(false);
   const deletingUserId = useSignal<number | null>(null);
-
   // Use useComputed$ to ensure paginatedAuthors updates when currentPage or authors change
-  const totalPages = useComputed$(() => Math.ceil((authors?.length || 0) / ITEMS_PER_PAGE));
-  
+  const filteredAuthors = useComputed$(() => {
+  if (!userId.value) return authors;
+    return authors.filter((author) => author.id.toString() !== userId.value);
+  });
+
+  const totalPages = useComputed$(() =>
+    Math.ceil((filteredAuthors.value.length || 0) / ITEMS_PER_PAGE)
+  );
+
   const paginatedAuthors = useComputed$(() => {
     const startIndex = (currentPage.value - 1) * ITEMS_PER_PAGE;
     const endIndex = currentPage.value * ITEMS_PER_PAGE;
-    return authors.slice(startIndex, endIndex);
+    return filteredAuthors.value.slice(startIndex, endIndex);
   });
 
   const handleStatusToggle = $((authorId: number) => {
     selectedUserId.value = authorId;
     showConfirmDialog.value = true;
   });
+
+  useVisibleTask$(() => {
+      function getCookie(name: string) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop()?.split(';').shift();
+      }
+  
+      const accessToken = getCookie('access_token');
+      if (accessToken) {
+        try {
+          const decoded = jwtDecode<any>(accessToken);
+          const userIdFromToken = decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+          userId.value = userIdFromToken;
+        } catch (err) {
+          console.error('Invalid access token', err);
+        }
+      }
+    });
 
   const confirmStatusChange = $(async () => {
     if (selectedUserId.value === null) return;
