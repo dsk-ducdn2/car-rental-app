@@ -12,10 +12,12 @@ export default component$(() => {
   const name = useSignal('');
   const email = useSignal('');
   const password = useSignal('');
+  const phone = useSignal('');
 
   const nameError = useSignal('');
   const emailError = useSignal('');
   const passwordError = useSignal('');
+  const phoneError = useSignal('');
   const serverError = useSignal('');
 
   const API_URL = import.meta.env.VITE_API_URL;
@@ -46,6 +48,13 @@ export default component$(() => {
       emailError.value = '';
     }
 
+    if (!phone.value.trim()) {
+      phoneError.value = 'Required fields';
+      valid = false;
+    } else {
+      phoneError.value = '';
+    }
+
     // Password validation
     if (!password.value) {
       passwordError.value = 'Required fields';
@@ -72,6 +81,7 @@ export default component$(() => {
         body: JSON.stringify({
           email: email.value,
           password: password.value,
+          phone: phone.value,
           name: name.value
         })
       });
@@ -317,6 +327,18 @@ export default component$(() => {
                 />
                 {emailError.value && (
                   <div class="text-red-500 text-xs mt-1 ml-1">{emailError.value}</div>
+                )}
+              </div>
+              <div>
+                <input
+                  type="tel"
+                  placeholder="Phone"
+                  value={phone.value}
+                  onInput$={e => (phone.value = (e.target as HTMLInputElement).value)}
+                  class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#393869] transition-all duration-200 text-base"
+                />
+                {phoneError.value && (
+                  <div class="text-red-500 text-xs mt-1 ml-1">{phoneError.value}</div>
                 )}
               </div>
               <div>

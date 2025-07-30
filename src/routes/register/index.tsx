@@ -4,13 +4,15 @@ export default component$(() => {
   const agree = useSignal(false);
   const submitted = useSignal(false);
 
-  // Thêm signals cho value và error của từng trường
+  // Signals cho các trường và lỗi
   const name = useSignal('');
   const email = useSignal('');
+  const phone = useSignal('');
   const password = useSignal('');
 
   const nameError = useSignal('');
   const emailError = useSignal('');
+  const phoneError = useSignal('');
   const passwordError = useSignal('');
   const serverError = useSignal('');
 
@@ -20,7 +22,7 @@ export default component$(() => {
     submitted.value = true;
     let valid = true;
 
-    // Name
+    // Name validation
     if (!name.value.trim()) {
       nameError.value = 'Required fields';
       valid = false;
@@ -28,7 +30,7 @@ export default component$(() => {
       nameError.value = '';
     }
 
-    // Email
+    // Email validation
     if (!email.value.trim()) {
       emailError.value = 'Required fields';
       valid = false;
@@ -39,7 +41,15 @@ export default component$(() => {
       emailError.value = '';
     }
 
-    // Password
+    // Phone validation
+    if (!phone.value.trim()) {
+      phoneError.value = 'Required fields';
+      valid = false;
+    } else {
+      phoneError.value = '';
+    }
+
+    // Password validation
     if (!password.value) {
       passwordError.value = 'Required fields';
       valid = false;
@@ -65,8 +75,9 @@ export default component$(() => {
         body: JSON.stringify({
           email: email.value,
           password: password.value,
-          name: name.value
-        })
+          name: name.value,
+          phone: phone.value,
+        }),
       });
 
       if (res.ok) {
@@ -79,6 +90,7 @@ export default component$(() => {
       serverError.value = (err as any)?.message || 'Unable to connect to server!';
     }
   });
+
   return (
     <div class="min-h-screen bg-gradient-to-br from-[#f6f7fa] to-[#e9eaf3] flex flex-col">
       {/* Banner */}
@@ -94,11 +106,13 @@ export default component$(() => {
           Use these awesome forms to login or create new account in your project for free.
         </p>
       </div>
+
       {/* Register Form */}
       <div class="max-w-md w-full mx-auto -mt-24 bg-white rounded-3xl shadow-2xl p-10 flex flex-col items-center border border-gray-100">
         <div class="text-2xl font-bold mb-8 text-center text-[#393869] tracking-wide">Register</div>
-        {/* Form */}
+
         <form class="w-full" preventdefault:submit onSubmit$={handleSubmit}>
+          {/* Name */}
           <div class="mb-4">
             <input
               type="text"
@@ -107,10 +121,10 @@ export default component$(() => {
               onInput$={e => (name.value = (e.target as HTMLInputElement).value)}
               class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#393869] transition-all duration-200 text-base"
             />
-            {nameError.value && (
-              <div class="text-red-500 text-xs mt-1 ml-1">{nameError.value}</div>
-            )}
+            {nameError.value && <div class="text-red-500 text-xs mt-1 ml-1">{nameError.value}</div>}
           </div>
+
+          {/* Email */}
           <div class="mb-4">
             <input
               type="email"
@@ -119,10 +133,22 @@ export default component$(() => {
               onInput$={e => (email.value = (e.target as HTMLInputElement).value)}
               class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#393869] transition-all duration-200 text-base"
             />
-            {emailError.value && (
-              <div class="text-red-500 text-xs mt-1 ml-1">{emailError.value}</div>
-            )}
+            {emailError.value && <div class="text-red-500 text-xs mt-1 ml-1">{emailError.value}</div>}
           </div>
+
+          {/* Phone */}
+          <div class="mb-4">
+            <input
+              type="tel"
+              placeholder="Phone"
+              value={phone.value}
+              onInput$={e => (phone.value = (e.target as HTMLInputElement).value)}
+              class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#393869] transition-all duration-200 text-base"
+            />
+            {phoneError.value && <div class="text-red-500 text-xs mt-1 ml-1">{phoneError.value}</div>}
+          </div>
+
+          {/* Password */}
           <div class="mb-4">
             <input
               type="password"
@@ -131,10 +157,10 @@ export default component$(() => {
               onInput$={e => (password.value = (e.target as HTMLInputElement).value)}
               class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#393869] transition-all duration-200 text-base"
             />
-            {passwordError.value && (
-              <div class="text-red-500 text-xs mt-1 ml-1">{passwordError.value}</div>
-            )}
+            {passwordError.value && <div class="text-red-500 text-xs mt-1 ml-1">{passwordError.value}</div>}
           </div>
+
+          {/* Agree to terms */}
           <div class="flex items-center mb-3">
             <input
               id="agree"
@@ -150,16 +176,21 @@ export default component$(() => {
           {submitted.value && !agree.value && (
             <div class="text-red-500 text-xs mb-3 ml-8">You must agree to the terms and conditions</div>
           )}
+
+          {/* Submit button */}
           <button
             type="submit"
             class="w-full py-3 rounded-xl bg-[#393869] text-white font-bold shadow-md text-base tracking-wider hover:bg-[#2d2c4a] transition-all duration-200 mt-2"
           >
             SIGN UP
           </button>
+
+          {/* Server error */}
           {serverError.value && (
             <div class="text-red-500 text-xs mt-3 text-center">{serverError.value}</div>
           )}
         </form>
+
         {/* Sign In Link */}
         <div class="mt-8 text-center text-gray-400 text-sm">
           ALREADY HAVE AN ACCOUNT?{' '}

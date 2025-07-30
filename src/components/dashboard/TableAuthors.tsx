@@ -27,8 +27,6 @@ export default component$<TableAuthorsProps>(({ authors }) => {
   // Thêm state cho dialog xóa và loading bar
   const showDeleteDialog = useSignal(false);
   const deletingUserId = useSignal<number | null>(null);
-  const showProgressBar = useSignal(false);
-  const progress = useSignal(0);
 
   // Use useComputed$ to ensure paginatedAuthors updates when currentPage or authors change
   const totalPages = useComputed$(() => Math.ceil((authors?.length || 0) / ITEMS_PER_PAGE));
