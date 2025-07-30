@@ -109,9 +109,10 @@ export default component$((props: { user: Author }) => {
       });
 
       if (res.ok) {
-        toastState.visible = true;
-        setTimeout(() => (toastState.visible = false), 2000);
-      } else {
+        isUpdate
+        ? (toastState.visible = true)
+        : (window.location.href = '/tables');
+        } else {
         const result = await res.json().catch(() => null);
         if (result && typeof result === 'object') {
           if (result.name) formErrors.name = result.name;

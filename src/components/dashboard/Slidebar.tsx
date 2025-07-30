@@ -1,5 +1,6 @@
-import { component$, useSignal, $ } from '@builder.io/qwik';
+import { component$, useSignal, $, useVisibleTask$ } from '@builder.io/qwik';
 import { useLocation } from '@builder.io/qwik-city';
+import { jwtDecode } from 'jwt-decode';
 
 const menu = [
   { label: 'Dashboard', icon: (
@@ -28,13 +29,40 @@ const accountPages = [
   ), href: '/logout' },
 ];
 
+type JwtPayload = {
+  role?: string;
+  // Các claim khác nếu cần
+};
+
 export const Sidebar = component$(() => {
   const API_URL = import.meta.env.VITE_API_URL;
   const loc = useLocation();
   const currentPath = loc.url.pathname;
   const collapsed = useSignal(false); // trạng thái thu/phóng
+  const role = useSignal<string | undefined>(undefined);
   // Tìm index của menu item có href khớp với url hiện tại
-  const activeIndex = menu.findIndex(item => item.href && currentPath.startsWith(item.href));
+  // Lọc menu theo role
+  const filteredMenu = menu.filter(item => !(item.label === 'Users' && role.value === 'user'));
+  const activeIndex = filteredMenu.findIndex(item => item.href && currentPath.startsWith(item.href));
+
+  useVisibleTask$(() => {
+    function getCookie(name: string) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(';').shift();
+    }
+
+    const accessToken = getCookie('access_token');
+    if (accessToken) {
+      try {
+        const decoded = jwtDecode<any>(accessToken);
+        const roleFromToken = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+        role.value = roleFromToken;
+      } catch (err) {
+        console.error('Invalid access token', err);
+      }
+    }
+  });
 
   const handleLogout = $(async (e: Event) => {
     e.preventDefault();
@@ -99,20 +127,14 @@ export const Sidebar = component$(() => {
       {/* Main menu */}
       <nav>
         <ul class="flex flex-col gap-2">
-          {menu.map((item, idx) => (
+          {filteredMenu.map((item, idx) => (
             <div key={idx}>
               {item.href ? (
                 <a href={item.href} class="block">
-                  <li
-                    class={[
-                      'flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition shadow-sm',
-                      activeIndex === idx
-                        ? 'bg-cyan-500 text-white font-bold'
-                        : 'bg-white text-gray-700 hover:bg-gray-100 font-medium',
-                      'text-sm',
-                    ]}
-                    title={collapsed.value ? item.label : undefined}
-                  >
+                  <li class={[
+                    'flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition shadow-sm text-sm',
+                    activeIndex === idx ? 'bg-cyan-500 text-white font-bold' : 'bg-white text-gray-700 hover:bg-gray-100 font-medium'
+                  ]} title={collapsed.value ? item.label : undefined}>
                     <span class={[
                       'w-8 h-8 flex items-center justify-center rounded-lg',
                       activeIndex === idx ? 'bg-cyan-500 text-white' : 'bg-gray-100 text-[#344767]'
@@ -125,16 +147,10 @@ export const Sidebar = component$(() => {
                   </li>
                 </a>
               ) : (
-                <li
-                  class={[
-                    'flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition shadow-sm',
-                    activeIndex === idx
-                      ? 'bg-cyan-500 text-white font-bold'
-                      : 'bg-white text-gray-700 hover:bg-gray-100 font-medium',
-                    'text-sm',
-                  ]}
-                  title={collapsed.value ? item.label : undefined}
-                >
+                <li class={[
+                  'flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition shadow-sm text-sm',
+                  activeIndex === idx ? 'bg-cyan-500 text-white font-bold' : 'bg-white text-gray-700 hover:bg-gray-100 font-medium'
+                ]} title={collapsed.value ? item.label : undefined}>
                   <span class={[
                     'w-8 h-8 flex items-center justify-center rounded-lg',
                     activeIndex === idx ? 'bg-cyan-500 text-white' : 'bg-gray-100 text-[#344767]'
