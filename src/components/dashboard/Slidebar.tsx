@@ -8,10 +8,13 @@ const menu = [
   ), href: '/dashboard' },
   { label: 'Users', icon: (
     <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="4" rx="1" fill="currentColor"/><rect x="3" y="10" width="18" height="4" rx="1" fill="currentColor"/><rect x="3" y="15" width="18" height="4" rx="1" fill="currentColor"/></svg>
-  ), href: '/tables' },
+  ), href: '/users' },
+  { label: 'Companies', icon: (
+    <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor"/><rect x="7" y="7" width="4" height="10" rx="1" fill="#fff"/><rect x="13" y="7" width="4" height="10" rx="1" fill="#fff"/></svg>
+  ), href: '/companies' },
   { label: 'Billing', icon: (
     <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2" fill="currentColor"/><rect x="7" y="3" width="10" height="4" rx="1" fill="currentColor"/></svg>
-  ), href: '/tables' },
+  ), href: '/billing' },
   { label: 'Virtual Reality', icon: (
     <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="5" fill="currentColor"/><circle cx="7" cy="12" r="2" fill="#fff"/><circle cx="17" cy="12" r="2" fill="#fff"/></svg>
   ) },
@@ -22,10 +25,7 @@ const menu = [
 
 
 
-type JwtPayload = {
-  role?: string;
-  // Các claim khác nếu cần
-};
+
 
 export const Sidebar = component$(() => {
   const API_URL = import.meta.env.VITE_API_URL;
@@ -37,7 +37,35 @@ export const Sidebar = component$(() => {
   // Tìm index của menu item có href khớp với url hiện tại
   // Lọc menu theo role
   const filteredMenu = menu.filter(item => !(item.label === 'Users' && role.value === 'user'));
-  const activeIndex = filteredMenu.findIndex(item => item.href && currentPath.startsWith(item.href));
+  
+  // Fix logic để highlight đúng tab
+  const activeIndex = filteredMenu.findIndex(item => {
+    if (!item.href) return false;
+    
+    // Company-related routes
+    if (item.href === '/companies' && (
+      currentPath.startsWith('/companies') || 
+      currentPath.startsWith('/create-company') || 
+      currentPath.startsWith('/edit-company')
+    )) return true;
+    
+    // User-related routes
+    if (item.href === '/users' && (
+      currentPath === '/users' || 
+      currentPath.startsWith('/users/') || 
+      currentPath.startsWith('/create-user') || 
+      currentPath.startsWith('/edit-user') || 
+      currentPath.startsWith('/profile')
+    )) return true;
+    
+    // Dashboard route
+    if (item.href === '/dashboard' && currentPath === '/dashboard') return true;
+    
+    // Billing route
+    if (item.href === '/billing' && currentPath.startsWith('/billing')) return true;
+    
+    return false;
+  });
 
   const accountPages = [
   { label: 'Profile', icon: (

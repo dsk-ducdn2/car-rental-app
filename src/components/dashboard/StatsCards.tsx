@@ -5,13 +5,13 @@ export const StatsCards = component$(() => (
     <div class="bg-white rounded-lg shadow p-6 w-full md:w-1/4 flex flex-col items-center mb-2 md:mb-0">
       <span class="text-green-600 font-bold">+55%</span>
     </div>
-    <div class="bg-white rounded-lg shadow p-6 w-full md:w-1/4 flex flex-col items-center mb-2 md:mb-0">
+    <div class="bg-white rounded-lg shadow p-6 w-full md:w-1/4 min-h-[80px] flex flex-col items-center mb-2 md:mb-0">
       <span class="text-green-600 font-bold">+3%</span>
     </div>
-    <div class="bg-white rounded-lg shadow p-6 w-full md:w-1/4 flex flex-col items-center mb-2 md:mb-0">
+    <div class="bg-white rounded-lg shadow p-6 w-full md:w-1/4 min-h-[80px] flex flex-col items-center mb-2 md:mb-0">
       <span class="text-red-600 font-bold">-2%</span>
     </div>
-    <div class="bg-white rounded-lg shadow p-6 w-full md:w-1/4 flex flex-col items-center">
+    <div class="bg-white rounded-lg shadow p-6 w-full md:w-1/4 min-h-[80px] flex flex-col items-center">
       <span class="text-green-600 font-bold">+5%</span>
     </div>
   </div>

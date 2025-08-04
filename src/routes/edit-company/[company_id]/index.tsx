@@ -1,23 +1,22 @@
 import { component$, useStore, useVisibleTask$ } from '@builder.io/qwik';
 import { useLocation } from '@builder.io/qwik-city';
-import EditUser from '../../../components/dashboard/EditUser';
+import EditCompany from '../../../components/dashboard/EditCompany';
 import { Sidebar } from  '../../../components/dashboard/Slidebar';
 import { DashboardHeader } from '../../../components/dashboard/DashboardHeader';
 import { fetchWithAuth } from '../../../utils/api';
 
 export default component$(() => {
   const loc = useLocation();
-  const userId = loc.params.user_id;
+  const companyId = loc.params.company_id;
   const API_URL = import.meta.env.VITE_API_URL;
 
   const store = useStore({
-    user: null as null | {
+    company: null as null | {
       id: number;
       name: string;
-      email: string;
+      address: string;
       phone: string;
-      companyId: number;
-      roleId: number;
+      email: string;
       status: boolean;
     },
     loading: true
@@ -26,19 +25,18 @@ export default component$(() => {
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async () => {
     try {
-      const res = await fetchWithAuth(`${API_URL}/Users/${userId}`);
+      const res = await fetchWithAuth(`${API_URL}/Companies/${companyId}`);
       const data = await res.json();
-      store.user = {
+      store.company = {
         id: data.id,
-        name: data.name || data.email?.split('@')[0],
-        email: data.email,
+        name: data.name || '',
+        address: data.address || '',
         phone: data.phone || '',
-        companyId: data.companyId,
-        roleId: data.roleId,
-        status: data.status === '1',
+        email: data.email || '',
+        status: data.status === true || data.status === '1',
       };
     } catch (error) {
-      console.error('Failed to fetch user:', error);
+      console.error('Failed to fetch company:', error);
     } finally {
       store.loading = false;
     }
@@ -66,11 +64,11 @@ export default component$(() => {
                   <div class="h-12 bg-gray-200 rounded animate-pulse"></div>
                 </div>
               </div>
-            ) : store.user ? (
-              <EditUser user={store.user} />
+            ) : store.company ? (
+              <EditCompany company={store.company} />
             ) : (
               <div class="flex justify-center items-center min-h-[400px]">
-                <p class="text-red-500">Failed to load user data</p>
+                <p class="text-red-500">Failed to load company data</p>
               </div>
             )}
           </div>

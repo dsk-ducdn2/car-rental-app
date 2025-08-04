@@ -143,19 +143,19 @@ const orders = [
 export const DashboardProjectsAndOrders = component$(() => (
   <div class="flex flex-col lg:flex-row gap-2 lg:gap-6 mt-8">
     {/* Projects Card */}
-    <div class="bg-white rounded-2xl shadow p-4 md:p-8 flex-1 min-w-full md:min-w-[400px] mb-2 lg:mb-0">
+    <div class="bg-white rounded-2xl shadow p-4 md:p-8 flex-1 min-w-full md:min-w-[400px] min-h-[400px] mb-2 lg:mb-0">
       <div class="flex items-center justify-between mb-4">
         <div class="text-lg font-bold">Projects</div>
         <div class="text-sm text-blue-500 font-semibold">✓ 30 DONE <span class="text-gray-400 font-normal">THIS MONTH</span></div>
       </div>
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[600px] text-left">
+        <table class="w-full min-w-[600px] text-left table-fixed">
           <thead>
             <tr class="text-xs text-gray-400 uppercase">
-              <th class="py-2">COMPANIES</th>
-              <th class="py-2">MEMBERS</th>
-              <th class="py-2">BUDGET</th>
-              <th class="py-2">COMPLETION</th>
+              <th class="py-2 w-2/5">COMPANIES</th>
+              <th class="py-2 w-1/5">MEMBERS</th>
+              <th class="py-2 w-1/5">BUDGET</th>
+              <th class="py-2 w-1/5">COMPLETION</th>
             </tr>
           </thead>
           <tbody>
@@ -165,7 +165,24 @@ export const DashboardProjectsAndOrders = component$(() => (
                 <td class="py-3">
                   <div class="flex -space-x-2">
                     {p.members.map((m) => (
-                      <img key={m} src={membersAvatars[m-1]} class="w-7 h-7 rounded-full border-2 border-white" width="28" height="28" />
+                      <div key={m} class="w-7 h-7 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center overflow-hidden">
+                        <img 
+                          src={membersAvatars[m-1]} 
+                          alt={`Member ${m}`}
+                          class="w-full h-full object-cover rounded-full"
+                          width="28" 
+                          height="28"
+                          loading="lazy"
+                          onError$={(e: Event) => {
+                            const img = e.target as HTMLImageElement;
+                            img.style.display = 'none';
+                            const parent = img.parentElement;
+                            if (parent) {
+                              parent.innerHTML = `<span class="text-xs text-gray-500 font-semibold">${m}</span>`;
+                            }
+                          }}
+                        />
+                      </div>
                     ))}
                   </div>
                 </td>
@@ -182,7 +199,7 @@ export const DashboardProjectsAndOrders = component$(() => (
       </div>
     </div>
     {/* Orders Overview Card */}
-    <div class="bg-white rounded-2xl shadow p-4 md:p-8 w-full lg:w-96 mt-2 lg:mt-0">
+    <div class="bg-white rounded-2xl shadow p-4 md:p-8 w-full lg:w-96 min-h-[400px] mt-2 lg:mt-0">
       <div class="font-bold mb-2">Orders overview</div>
       <div class="text-green-500 text-sm font-semibold mb-4">↑ 24% <span class="text-gray-400 font-normal">THIS MONTH</span></div>
       <ul class="space-y-4">

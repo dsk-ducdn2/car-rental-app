@@ -175,6 +175,7 @@ export default component$<TableAuthorsProps>(({ authors }) => {
         }, 3000);
       }
     } catch (error) {
+      console.error('Error deleting user:', error);
       notificationMessage.value = 'Error occurred while deleting user';
       notificationType.value = 'error';
       showNotification.value = true;
@@ -371,14 +372,14 @@ export default component$<TableAuthorsProps>(({ authors }) => {
       </div>
 
       <div class="overflow-x-auto">
-        <table class="min-w-full bg-white rounded-lg">
+        <table class="min-w-full bg-white rounded-lg table-fixed">
           <thead>
             <tr class="text-left text-xs text-gray-500 uppercase border-b border-gray-200">
-              <th class="py-3 px-6">Author</th>
-              <th class="py-3 px-6">Email</th>
-              <th class="py-3 px-6">Phone Number</th>
-              <th class="py-3 px-6">Status</th>
-              <th class="py-3 px-6">Action</th>
+              <th class="py-3 px-6 w-1/5">Author</th>
+              <th class="py-3 px-6 w-1/5">Email</th>
+              <th class="py-3 px-6 w-1/5">Phone Number</th>
+              <th class="py-3 px-6 w-1/5">Status</th>
+              <th class="py-3 px-6 w-1/5">Action</th>
             </tr>
           </thead>
           <tbody>

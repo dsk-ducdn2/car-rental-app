@@ -48,6 +48,11 @@ export default component$((props: { user: Author }) => {
     user?.id?.toString() === userId.value
   );
 
+  const needsPasswordField = useComputed$(() => {
+    const isCreatingUser = !user?.id;
+    return isCreatingUser || isEditingSelf.value;
+  });
+
   const formErrors = useStore({
     name: '',
     email: '',
@@ -95,6 +100,7 @@ export default component$((props: { user: Author }) => {
     formErrors.name = '';
     formErrors.email = '';
     formErrors.phone = '';
+    formErrors.password = '';
     formState.serverError = '';
 
     let hasError = false;
@@ -111,10 +117,11 @@ export default component$((props: { user: Author }) => {
       formErrors.phone = 'Phone number is required';
       hasError = true;
     }
-    if (!user?.id || isEditingSelf && !password.value.trim()) {
+    // Password validation: required when creating new user or editing self
+    if (needsPasswordField.value && !password.value.trim()) {
       formErrors.password = 'Password is required';
       hasError = true;
-    } else if (!user?.id || isEditingSelf && password.value.length < 6) {
+    } else if (needsPasswordField.value && password.value.length < 6) {
       formErrors.password = 'Password must be at least 6 characters';
       hasError = true;
     }
@@ -127,11 +134,11 @@ export default component$((props: { user: Author }) => {
       phone: phoneNumber.value,
       companyId: selectedCompany.value ?? null,
       roleId: selectedRole.value ? Number(selectedRole.value) : undefined,
-      ...((!user?.id || isEditingSelf) ? { password: password.value } : {})
+      ...(needsPasswordField.value ? { password: password.value } : {})
     };
 
     try {
-      const isUpdate = !!user?.id  || isEditingSelf;
+      const isUpdate = !!user?.id;
       console.log('Submitting form:', body);
       const url = isUpdate
         ? `${API_URL}/Users/${user.id}`
@@ -144,15 +151,22 @@ export default component$((props: { user: Author }) => {
       });
 
       if (res.ok) {
-        isUpdate
-        ? (toastState.visible = true)
-        : (window.location.href = '/tables');
+        if (isUpdate) {
+          toastState.visible = true;
+          // Auto-hide toast after 3 seconds
+          setTimeout(() => {
+            toastState.visible = false;
+          }, 3000);
         } else {
+          window.location.href = '/users';
+        }
+      } else {
         const result = await res.json().catch(() => null);
         if (result && typeof result === 'object') {
           if (result.name) formErrors.name = result.name;
           if (result.email) formErrors.email = result.email;
           if (result.phone) formErrors.phone = result.phone;
+          if (result.password) formErrors.password = result.password;
           if (result.message) formState.serverError = result.message;
         } else {
           formState.serverError = 'Internal Server Error. Please try again.';
@@ -220,7 +234,7 @@ export default component$((props: { user: Author }) => {
           )}
         </div>
 
-        {!user?.id || isEditingSelf && (
+        {needsPasswordField.value && (
           <div>
             <label class="block text-sm font-semibold mb-1 text-gray-700">Password</label>
             <input
