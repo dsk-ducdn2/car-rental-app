@@ -30,15 +30,19 @@ export const DashboardFeatureCards = component$(() => (
           loading="eager"
           onLoad$={(e: Event) => {
             const img = e.target as HTMLImageElement;
-            img.style.opacity = '1';
-            const placeholder = img.parentElement?.querySelector('.animate-pulse') as HTMLElement;
-            if (placeholder) {
-              placeholder.style.display = 'none';
+            if (img && img.style) {
+              img.style.opacity = '1';
+              const placeholder = img.parentElement?.querySelector('.animate-pulse') as HTMLElement;
+              if (placeholder && placeholder.style) {
+                placeholder.style.display = 'none';
+              }
             }
           }}
           onError$={(e: Event) => {
             const img = e.target as HTMLImageElement;
-            img.style.display = 'none';
+            if (img && img.style) {
+              img.style.display = 'none';
+            }
           }}
           style={{
             opacity: '0',

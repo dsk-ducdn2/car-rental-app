@@ -12,6 +12,9 @@ const menu = [
   { label: 'Companies', icon: (
     <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor"/><rect x="7" y="7" width="4" height="10" rx="1" fill="#fff"/><rect x="13" y="7" width="4" height="10" rx="1" fill="#fff"/></svg>
   ), href: '/companies' },
+  { label: 'Vehicles', icon: (
+    <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M5 12h14M5 12l2-6h10l2 6M5 12l1 4h2l1-4m8 0l1 4h2l1-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="9" cy="16" r="1" fill="currentColor"/><circle cx="15" cy="16" r="1" fill="currentColor"/></svg>
+  ), href: '/vehicles' },
   { label: 'Billing', icon: (
     <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2" fill="currentColor"/><rect x="7" y="3" width="10" height="4" rx="1" fill="currentColor"/></svg>
   ), href: '/billing' },
@@ -47,6 +50,13 @@ export const Sidebar = component$(() => {
       currentPath.startsWith('/companies') || 
       currentPath.startsWith('/create-company') || 
       currentPath.startsWith('/edit-company')
+    )) return true;
+    
+    // Vehicle-related routes
+    if (item.href === '/vehicles' && (
+      currentPath.startsWith('/vehicles') || 
+      currentPath.startsWith('/create-vehicle') || 
+      currentPath.startsWith('/edit-vehicle')
     )) return true;
     
     // User-related routes
