@@ -6,13 +6,13 @@ import EditVehicle from '../../components/dashboard/EditVehicle';
 export default component$(() => {
   // Empty vehicle for creation
   const emptyVehicle = {
-    make: '',
-    model: '',
-    year: new Date().getFullYear(),
+    companyId: '',
     licensePlate: '',
-    type: '',
-    status: 'Available',
-    pricePerDay: 0,
+    brand: '',
+    yearManufacture: new Date().getFullYear(),
+    status: 'AVAILABLE',
+    mileage: 0,
+    purchaseDate: '',
   };
 
   return (

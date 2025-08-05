@@ -5,27 +5,43 @@ import TableVehicles from '../../components/dashboard/TableVehicles';
 import { fetchWithAuth } from '../../utils/api';
 
 interface Vehicle {
-  id: number;
-  make: string;
-  model: string;
-  year: number;
+  id: string;
+  companyId: string;
+  companyName: string;
   licensePlate: string;
-  type: string;
+  brand: string;
+  yearManufacture: number;
   status: string;
-  pricePerDay: number;
+  mileage: number;
+  purchaseDate: string;
+  createdAt?: string;
+  updatedAt?: string;
+  company?: {
+    id: string;
+    name: string;
+    address: string;
+    phone: string;
+    email: string;
+    createdAt: string;
+    updatedAt: string;
+  };
 }
 
 const transformVehicleData = (vehicles: any[]) => {
   if (!Array.isArray(vehicles)) return [];
   return vehicles.map((vehicle, index) => ({
-    id: vehicle.id || index,
-    make: vehicle.make || 'N/A',
-    model: vehicle.model || 'N/A',
-    year: vehicle.year || new Date().getFullYear(),
+    id: vehicle.id || `vehicle-${index}`,
+    companyId: vehicle.companyId || '',
+    companyName: vehicle.company?.name || vehicle.companyName || 'N/A',
     licensePlate: vehicle.licensePlate || 'N/A',
-    type: vehicle.type || 'N/A',
-    status: vehicle.status || 'Available',
-    pricePerDay: vehicle.pricePerDay || 0,
+    brand: vehicle.brand || 'N/A',
+    yearManufacture: vehicle.yearManufacture || new Date().getFullYear(),
+    status: vehicle.status || 'AVAILABLE',
+    mileage: vehicle.mileage || 0,
+    purchaseDate: vehicle.purchaseDate ? vehicle.purchaseDate.split('T')[0] : 'N/A',
+    createdAt: vehicle.createdAt,
+    updatedAt: vehicle.updatedAt,
+    company: vehicle.company,
   }));
 };
 
@@ -70,12 +86,13 @@ export default component$(() => {
                   <table class="min-w-full bg-white rounded-lg">
                     <thead>
                       <tr class="text-left text-xs text-gray-500 uppercase border-b border-gray-200">
-                        <th class="py-3 px-6 w-1/8">Make & Model</th>
-                        <th class="py-3 px-6 w-1/8">Year</th>
+                        <th class="py-3 px-6 w-1/8">Company</th>
                         <th class="py-3 px-6 w-1/8">License Plate</th>
-                        <th class="py-3 px-6 w-1/8">Type</th>
+                        <th class="py-3 px-6 w-1/8">Brand</th>
+                        <th class="py-3 px-6 w-1/8">Year</th>
+                        <th class="py-3 px-6 w-1/8">Mileage</th>
                         <th class="py-3 px-6 w-1/8">Status</th>
-                        <th class="py-3 px-6 w-1/8">Price/Day</th>
+                        <th class="py-3 px-6 w-1/8">Pricing</th>
                         <th class="py-3 px-6 w-1/8">Action</th>
                       </tr>
                     </thead>
@@ -83,8 +100,10 @@ export default component$(() => {
                       {Array.from({ length: 8 }).map((_, idx) => (
                         <tr key={idx} class="border-b border-gray-200">
                           <td class="py-4 px-6">
-                            <div class="h-4 bg-gray-200 rounded animate-pulse mb-1"></div>
-                            <div class="h-3 bg-gray-200 rounded animate-pulse"></div>
+                            <div class="h-4 bg-gray-200 rounded animate-pulse"></div>
+                          </td>
+                          <td class="py-4 px-6">
+                            <div class="h-4 bg-gray-200 rounded animate-pulse"></div>
                           </td>
                           <td class="py-4 px-6">
                             <div class="h-4 bg-gray-200 rounded animate-pulse"></div>
@@ -99,7 +118,7 @@ export default component$(() => {
                             <div class="h-6 w-16 bg-gray-200 rounded-full animate-pulse"></div>
                           </td>
                           <td class="py-4 px-6">
-                            <div class="h-4 bg-gray-200 rounded animate-pulse"></div>
+                            <div class="h-6 w-16 bg-gray-200 rounded animate-pulse"></div>
                           </td>
                           <td class="py-4 px-6">
                             <div class="flex gap-2">

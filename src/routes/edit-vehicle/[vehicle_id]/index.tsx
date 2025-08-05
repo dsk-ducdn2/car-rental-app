@@ -12,14 +12,15 @@ export default component$(() => {
 
   const store = useStore({
     vehicle: null as null | {
-      id: number;
-      make: string;
-      model: string;
-      year: number;
+      id: string;
+      companyId: string;
+      companyName?: string;
       licensePlate: string;
-      type: string;
+      brand: string;
+      yearManufacture: number;
       status: string;
-      pricePerDay: number;
+      mileage: number;
+      purchaseDate: string;
     },
     loading: true
   });
@@ -31,13 +32,14 @@ export default component$(() => {
       const data = await res.json();
       store.vehicle = {
         id: data.id,
-        make: data.make || '',
-        model: data.model || '',
-        year: data.year || new Date().getFullYear(),
+        companyId: data.companyId || '',
+        companyName: data.companyName || data.company?.name || '',
         licensePlate: data.licensePlate || '',
-        type: data.type || '',
-        status: data.status || 'Available',
-        pricePerDay: data.pricePerDay || 0,
+        brand: data.brand || '',
+        yearManufacture: data.yearManufacture || new Date().getFullYear(),
+        status: data.status || 'AVAILABLE',
+        mileage: data.mileage || 0,
+        purchaseDate: data.purchaseDate ? data.purchaseDate.split('T')[0] : '',
       };
     } catch (error) {
       console.error('Failed to fetch vehicle:', error);

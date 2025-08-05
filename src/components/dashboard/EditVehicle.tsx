@@ -3,82 +3,93 @@ import {
   useSignal,
   useStore,
   $,
+  useVisibleTask$,
 } from '@builder.io/qwik';
 import { fetchWithAuth } from '~/utils/api';
 import '../../routes/index.css';
 
 interface Vehicle {
-  id?: number;
-  make: string;
-  model: string;
-  year: number;
+  id?: string;
+  companyId: string;
+  companyName?: string;
   licensePlate: string;
-  type: string;
+  brand: string;
+  yearManufacture: number;
   status: string;
-  pricePerDay: number;
+  mileage: number;
+  purchaseDate: string;
+}
+
+interface Company {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
 }
 
 export default component$((props: { vehicle: Vehicle }) => {
   const { vehicle } = props;
   const API_URL = import.meta.env.VITE_API_URL;
 
-  const make = useSignal(vehicle.make);
-  const model = useSignal(vehicle.model);
-  const year = useSignal(vehicle.year.toString());
+  const companyId = useSignal(vehicle.companyId || '');
   const licensePlate = useSignal(vehicle.licensePlate);
-  const type = useSignal(vehicle.type);
+  const brand = useSignal(vehicle.brand);
+  const yearManufacture = useSignal(vehicle.yearManufacture.toString());
   const status = useSignal(vehicle.status);
-  const pricePerDay = useSignal(vehicle.pricePerDay.toString());
+  const mileage = useSignal(vehicle.mileage.toString());
+  const purchaseDate = useSignal(vehicle.purchaseDate);
 
   const toastState = useStore({ visible: false });
+  const companies = useSignal<Company[]>([]);
+  const companiesLoading = useSignal(true);
 
   const formErrors = useStore({
-    make: '',
-    model: '',
-    year: '',
+    companyId: '',
     licensePlate: '',
-    type: '',
+    brand: '',
+    yearManufacture: '',
     status: '',
-    pricePerDay: '',
+    mileage: '',
+    purchaseDate: '',
   });
 
   const formState = useStore({
     serverError: '',
   });
 
+  // Fetch companies for dropdown
+  // eslint-disable-next-line qwik/no-use-visible-task
+  useVisibleTask$(async () => {
+    try {
+      const res = await fetchWithAuth(`${API_URL}/Companies`);
+      const data = await res.json();
+      companies.value = Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Failed to fetch companies:', error);
+      companies.value = [];
+    } finally {
+      companiesLoading.value = false;
+    }
+  });
+
   const handleSubmit = $(async (e: Event) => {
     e.preventDefault();
-    formErrors.make = '';
-    formErrors.model = '';
-    formErrors.year = '';
+    formErrors.companyId = '';
     formErrors.licensePlate = '';
-    formErrors.type = '';
+    formErrors.brand = '';
+    formErrors.yearManufacture = '';
     formErrors.status = '';
-    formErrors.pricePerDay = '';
+    formErrors.mileage = '';
+    formErrors.purchaseDate = '';
     formState.serverError = '';
 
     // Client-side validation
     let hasError = false;
 
-    if (!make.value.trim()) {
-      formErrors.make = 'Make is required';
+    if (!companyId.value.trim()) {
+      formErrors.companyId = 'Please select a company';
       hasError = true;
-    }
-
-    if (!model.value.trim()) {
-      formErrors.model = 'Model is required';
-      hasError = true;
-    }
-
-    if (!year.value.trim()) {
-      formErrors.year = 'Year is required';
-      hasError = true;
-    } else {
-      const yearNumber = parseInt(year.value);
-      if (isNaN(yearNumber) || yearNumber < 1900 || yearNumber > new Date().getFullYear() + 1) {
-        formErrors.year = 'Please enter a valid year';
-        hasError = true;
-      }
     }
 
     if (!licensePlate.value.trim()) {
@@ -86,9 +97,20 @@ export default component$((props: { vehicle: Vehicle }) => {
       hasError = true;
     }
 
-    if (!type.value.trim()) {
-      formErrors.type = 'Vehicle type is required';
+    if (!brand.value.trim()) {
+      formErrors.brand = 'Brand is required';
       hasError = true;
+    }
+
+    if (!yearManufacture.value.trim()) {
+      formErrors.yearManufacture = 'Year is required';
+      hasError = true;
+    } else {
+      const yearNumber = parseInt(yearManufacture.value);
+      if (isNaN(yearNumber) || yearNumber < 1900 || yearNumber > new Date().getFullYear() + 1) {
+        formErrors.yearManufacture = 'Please enter a valid year';
+        hasError = true;
+      }
     }
 
     if (!status.value.trim()) {
@@ -96,15 +118,20 @@ export default component$((props: { vehicle: Vehicle }) => {
       hasError = true;
     }
 
-    if (!pricePerDay.value.trim()) {
-      formErrors.pricePerDay = 'Price per day is required';
+    if (!mileage.value.trim()) {
+      formErrors.mileage = 'Mileage is required';
       hasError = true;
     } else {
-      const priceNumber = parseFloat(pricePerDay.value);
-      if (isNaN(priceNumber) || priceNumber <= 0) {
-        formErrors.pricePerDay = 'Please enter a valid price';
+      const mileageNumber = parseFloat(mileage.value);
+      if (isNaN(mileageNumber) || mileageNumber < 0) {
+        formErrors.mileage = 'Please enter a valid mileage';
         hasError = true;
       }
+    }
+
+    if (!purchaseDate.value.trim()) {
+      formErrors.purchaseDate = 'Purchase date is required';
+      hasError = true;
     }
 
     // Stop submission if validation fails
@@ -118,13 +145,13 @@ export default component$((props: { vehicle: Vehicle }) => {
       : `${API_URL}/Vehicles`;
     
     const body = {
-      make: make.value,
-      model: model.value,
-      year: parseInt(year.value),
+      companyId: companyId.value,
       licensePlate: licensePlate.value,
-      type: type.value,
+      brand: brand.value,
+      yearManufacture: parseInt(yearManufacture.value),
       status: status.value,
-      pricePerDay: parseFloat(pricePerDay.value),
+      mileage: parseFloat(mileage.value),
+      purchaseDate: purchaseDate.value,
     };
 
     try {
@@ -149,13 +176,13 @@ export default component$((props: { vehicle: Vehicle }) => {
       } else {
         const result = await res.json().catch(() => null);
         if (result && typeof result === 'object') {
-          if (result.make) formErrors.make = result.make;
-          if (result.model) formErrors.model = result.model;
-          if (result.year) formErrors.year = result.year;
+          if (result.companyId) formErrors.companyId = result.companyId;
           if (result.licensePlate) formErrors.licensePlate = result.licensePlate;
-          if (result.type) formErrors.type = result.type;
+          if (result.brand) formErrors.brand = result.brand;
+          if (result.yearManufacture) formErrors.yearManufacture = result.yearManufacture;
           if (result.status) formErrors.status = result.status;
-          if (result.pricePerDay) formErrors.pricePerDay = result.pricePerDay;
+          if (result.mileage) formErrors.mileage = result.mileage;
+          if (result.purchaseDate) formErrors.purchaseDate = result.purchaseDate;
           if (result.message) formState.serverError = result.message;
         } else {
           formState.serverError = 'Internal Server Error. Please try again.';
@@ -180,48 +207,27 @@ export default component$((props: { vehicle: Vehicle }) => {
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label class="block text-sm font-semibold mb-1 text-gray-700">Make</label>
-            <input
-              type="text"
-              value={make.value}
-              onInput$={(e) => (make.value = (e.target as HTMLInputElement).value)}
-              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="e.g., Toyota, Honda"
-            />
-            {formErrors.make && (
-              <div class="text-red-600 text-sm mt-1">{formErrors.make}</div>
+            <label class="block text-sm font-semibold mb-1 text-gray-700">Company</label>
+            {companiesLoading.value ? (
+              <div class="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-100">
+                <div class="h-4 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            ) : (
+              <select
+                value={companyId.value}
+                onChange$={(e) => (companyId.value = (e.target as HTMLSelectElement).value)}
+                class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              >
+                <option value="">Select a company</option>
+                {companies.value.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.name}
+                  </option>
+                ))}
+              </select>
             )}
-          </div>
-
-          <div>
-            <label class="block text-sm font-semibold mb-1 text-gray-700">Model</label>
-            <input
-              type="text"
-              value={model.value}
-              onInput$={(e) => (model.value = (e.target as HTMLInputElement).value)}
-              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="e.g., Camry, Civic"
-            />
-            {formErrors.model && (
-              <div class="text-red-600 text-sm mt-1">{formErrors.model}</div>
-            )}
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label class="block text-sm font-semibold mb-1 text-gray-700">Year</label>
-            <input
-              type="number"
-              value={year.value}
-              onInput$={(e) => (year.value = (e.target as HTMLInputElement).value)}
-              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="e.g., 2023"
-              min="1900"
-              max={new Date().getFullYear() + 1}
-            />
-            {formErrors.year && (
-              <div class="text-red-600 text-sm mt-1">{formErrors.year}</div>
+            {formErrors.companyId && (
+              <div class="text-red-600 text-sm mt-1">{formErrors.companyId}</div>
             )}
           </div>
 
@@ -242,23 +248,50 @@ export default component$((props: { vehicle: Vehicle }) => {
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label class="block text-sm font-semibold mb-1 text-gray-700">Vehicle Type</label>
-            <select
-              value={type.value}
-              onChange$={(e) => (type.value = (e.target as HTMLSelectElement).value)}
+            <label class="block text-sm font-semibold mb-1 text-gray-700">Brand</label>
+            <input
+              type="text"
+              value={brand.value}
+              onInput$={(e) => (brand.value = (e.target as HTMLInputElement).value)}
               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            >
-              <option value="">Select type</option>
-              <option value="Sedan">Sedan</option>
-              <option value="SUV">SUV</option>
-              <option value="Hatchback">Hatchback</option>
-              <option value="Truck">Truck</option>
-              <option value="Van">Van</option>
-              <option value="Convertible">Convertible</option>
-              <option value="Coupe">Coupe</option>
-            </select>
-            {formErrors.type && (
-              <div class="text-red-600 text-sm mt-1">{formErrors.type}</div>
+              placeholder="e.g., Toyota, Honda, Ford"
+            />
+            {formErrors.brand && (
+              <div class="text-red-600 text-sm mt-1">{formErrors.brand}</div>
+            )}
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold mb-1 text-gray-700">Year Manufacture</label>
+            <input
+              type="number"
+              value={yearManufacture.value}
+              onInput$={(e) => (yearManufacture.value = (e.target as HTMLInputElement).value)}
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="e.g., 2023"
+              min="1900"
+              max={new Date().getFullYear() + 1}
+            />
+            {formErrors.yearManufacture && (
+              <div class="text-red-600 text-sm mt-1">{formErrors.yearManufacture}</div>
+            )}
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-semibold mb-1 text-gray-700">Mileage (km)</label>
+            <input
+              type="number"
+              value={mileage.value}
+              onInput$={(e) => (mileage.value = (e.target as HTMLInputElement).value)}
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="e.g., 50000"
+              min="0"
+              step="1"
+            />
+            {formErrors.mileage && (
+              <div class="text-red-600 text-sm mt-1">{formErrors.mileage}</div>
             )}
           </div>
 
@@ -270,9 +303,9 @@ export default component$((props: { vehicle: Vehicle }) => {
               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
               <option value="">Select status</option>
-              <option value="Available">Available</option>
-              <option value="Rented">Rented</option>
-              <option value="Maintenance">Maintenance</option>
+              <option value="AVAILABLE">Available</option>
+              <option value="RENTED">Rented</option>
+              <option value="MAINTENANCE">Maintenance</option>
             </select>
             {formErrors.status && (
               <div class="text-red-600 text-sm mt-1">{formErrors.status}</div>
@@ -281,18 +314,15 @@ export default component$((props: { vehicle: Vehicle }) => {
         </div>
 
         <div>
-          <label class="block text-sm font-semibold mb-1 text-gray-700">Price Per Day ($)</label>
+          <label class="block text-sm font-semibold mb-1 text-gray-700">Purchase Date</label>
           <input
-            type="number"
-            value={pricePerDay.value}
-            onInput$={(e) => (pricePerDay.value = (e.target as HTMLInputElement).value)}
+            type="date"
+            value={purchaseDate.value}
+            onInput$={(e) => (purchaseDate.value = (e.target as HTMLInputElement).value)}
             class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            placeholder="e.g., 50.00"
-            min="0"
-            step="0.01"
           />
-          {formErrors.pricePerDay && (
-            <div class="text-red-600 text-sm mt-1">{formErrors.pricePerDay}</div>
+          {formErrors.purchaseDate && (
+            <div class="text-red-600 text-sm mt-1">{formErrors.purchaseDate}</div>
           )}
         </div>
 

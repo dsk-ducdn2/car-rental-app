@@ -1,15 +1,28 @@
 import { component$, useSignal, $, useComputed$ } from '@builder.io/qwik';
 import { fetchWithAuth } from '../../utils/api';
+import PricingConfig from './PricingConfig';
 
 interface Vehicle {
-  id: number;
-  make: string;
-  model: string;
-  year: number;
+  id: string;
+  companyId: string;
+  companyName: string;
   licensePlate: string;
-  type: string;
+  brand: string;
+  yearManufacture: number;
   status: string;
-  pricePerDay: number;
+  mileage: number;
+  purchaseDate: string;
+  createdAt?: string;
+  updatedAt?: string;
+  company?: {
+    id: string;
+    name: string;
+    address: string;
+    phone: string;
+    email: string;
+    createdAt: string;
+    updatedAt: string;
+  };
 }
 
 interface TableVehiclesProps {
@@ -27,7 +40,11 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
 
   // Add state for delete dialog and loading bar
   const showDeleteDialog = useSignal(false);
-  const deletingVehicleId = useSignal<number | null>(null);
+  const deletingVehicleId = useSignal<string | null>(null);
+
+  // Add state for pricing dialog
+  const showPricingDialog = useSignal(false);
+  const pricingVehicleId = useSignal<string | null>(null);
 
   const totalPages = useComputed$(() =>
     Math.ceil((vehicles.length || 0) / ITEMS_PER_PAGE)
@@ -39,15 +56,34 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
     return vehicles.slice(startIndex, endIndex);
   });
 
-  const handleEdit = $(async (vehicleId: number) => {
+  const handleEdit = $(async (vehicleId: string) => {
     // Edit logic here
     window.location.href = `/edit-vehicle/${vehicleId}`;
     console.log(`Edit vehicle ${vehicleId}`);
   });
 
-  const handleDelete = $((vehicleId: number) => {
+  const handleDelete = $((vehicleId: string) => {
     deletingVehicleId.value = vehicleId;
     showDeleteDialog.value = true;
+  });
+
+  const handlePricing = $((vehicleId: string) => {
+    pricingVehicleId.value = vehicleId;
+    showPricingDialog.value = true;
+  });
+
+  const closePricingDialog = $(() => {
+    showPricingDialog.value = false;
+    pricingVehicleId.value = null;
+  });
+
+  const handlePricingSuccess = $(() => {
+    notificationMessage.value = 'Pricing updated successfully';
+    notificationType.value = 'success';
+    showNotification.value = true;
+    setTimeout(() => {
+      showNotification.value = false;
+    }, 3000);
   });
 
   const cancelDelete = $(() => {
@@ -130,9 +166,9 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
     <div class="relative w-full h-full">
       {/* Success/Error Notification */}
       {showNotification.value && (
-        <div 
+                <div
           class={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-white ${
-            notificationType.value === 'success' ? 'bg-green-500' : 'bg-red-500'
+            notificationType.value === 'success' ? 'bg-yellow-500' : 'bg-red-500'
           }`}
         >
           <div class="flex items-center justify-between">
@@ -141,7 +177,7 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
               onClick$={() => (showNotification.value = false)}
               class={`ml-4 text-white hover:text-gray-200 ${
                 notificationType.value === 'success' 
-                  ? 'hover:text-green-200' 
+                  ? 'hover:text-yellow-200' 
                   : 'hover:text-red-200'
                 }`}
             >
@@ -203,6 +239,15 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
           </div>
         </div>
       )}
+
+      {/* Pricing Configuration Modal */}
+      {showPricingDialog.value && pricingVehicleId.value && (
+        <PricingConfig
+          vehicleId={pricingVehicleId.value}
+          onClose={closePricingDialog}
+          onSuccess={handlePricingSuccess}
+        />
+      )}
       
       <div class="flex justify-start mb-4 px-6">
         <button
@@ -220,12 +265,13 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
         <table class="min-w-full bg-white rounded-lg table-fixed">
           <thead>
             <tr class="text-left text-xs text-gray-500 uppercase border-b border-gray-200">
-              <th class="py-3 px-6 w-1/8">Make & Model</th>
-              <th class="py-3 px-6 w-1/8">Year</th>
+              <th class="py-3 px-6 w-1/8">Company</th>
               <th class="py-3 px-6 w-1/8">License Plate</th>
-              <th class="py-3 px-6 w-1/8">Type</th>
+              <th class="py-3 px-6 w-1/8">Brand</th>
+              <th class="py-3 px-6 w-1/8">Year</th>
+              <th class="py-3 px-6 w-1/8">Mileage</th>
               <th class="py-3 px-6 w-1/8">Status</th>
-              <th class="py-3 px-6 w-1/8">Price/Day</th>
+              <th class="py-3 px-6 w-1/8">Pricing</th>
               <th class="py-3 px-6 w-1/8">Action</th>
             </tr>
           </thead>
@@ -234,25 +280,36 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
               paginatedVehicles.value.map((vehicle: Vehicle, idx: number) => (
                 <tr key={idx} class="border-b border-gray-200 hover:bg-gray-50">
                   <td class="py-4 px-6">
-                    <div class="font-semibold text-gray-800">{vehicle.make}</div>
-                    <div class="text-sm text-gray-600">{vehicle.model}</div>
-                  </td>
-                  <td class="py-4 px-6">
-                    <div class="text-sm text-gray-700">{vehicle.year}</div>
+                    <div class="text-sm text-gray-700">{vehicle.companyName}</div>
                   </td>
                   <td class="py-4 px-6">
                     <div class="text-sm text-gray-700 font-mono">{vehicle.licensePlate}</div>
                   </td>
                   <td class="py-4 px-6">
-                    <div class="text-sm text-gray-700">{vehicle.type}</div>
+                    <div class="text-sm text-gray-700 font-semibold">{vehicle.brand}</div>
                   </td>
                   <td class="py-4 px-6">
-                    <span class={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(vehicle.status)}`}>
+                    <div class="text-sm text-gray-700">{vehicle.yearManufacture}</div>
+                  </td>
+                  <td class="py-4 px-6">
+                    <div class="text-sm text-gray-700">{vehicle.mileage.toLocaleString()} km</div>
+                  </td>
+                  <td class="py-4 px-6">
+                    <span class={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(vehicle.status.toLowerCase())}`}>
                       {vehicle.status}
                     </span>
                   </td>
-                  <td class="py-4 px-6">
-                    <div class="text-sm font-semibold text-gray-700">${vehicle.pricePerDay}</div>
+                  <td class="py-4 px-6 text-center">
+                    <button 
+                      onClick$={() => handlePricing(vehicle.id)}
+                      class="inline-flex items-center gap-1 text-yellow-600 font-semibold hover:underline text-sm px-2 py-1 rounded hover:bg-yellow-50"
+                      title="Configure pricing"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                      Config
+                    </button>
                   </td>
                   <td class="py-4 px-6">
                     <div class="flex items-center gap-2">
@@ -274,7 +331,7 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
               ))
             ) : (
               <tr>
-                <td colSpan={7} class="text-center py-6 text-gray-400">No vehicle data available.</td>
+                <td colSpan={8} class="text-center py-6 text-gray-400">No vehicle data available.</td>
               </tr>
             )}
           </tbody>
