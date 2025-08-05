@@ -1,8 +1,9 @@
-import { component$, useStore, useVisibleTask$ } from '@builder.io/qwik';
+import { component$, useStore, useVisibleTask$, useSignal } from '@builder.io/qwik';
 import TableAuthors from '../../components/dashboard/TableAuthors';
 import { Sidebar } from '../../components/dashboard/Slidebar';
 import { DashboardHeader } from '../../components/dashboard/DashboardHeader';
-import { fetchWithAuth } from '../../utils/api';
+import { fetchWithAuth, getCookie } from '../../utils/api';
+import { jwtDecode } from 'jwt-decode';
 // import { useNavigate } from '@builder.io/qwik-city';
 
 interface Author {
@@ -32,14 +33,36 @@ export default component$(() => {
     authors: [], 
     loading: true 
   });
+  const currentUserId = useSignal<string | undefined>(undefined);
   const API_URL = import.meta.env.VITE_API_URL;
   
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async () => {
     try {
+      // Get current user ID from JWT token first
+      let currentUserIdValue: string | undefined = undefined;
+      const accessToken = getCookie('access_token');
+      if (accessToken) {
+        try {
+          const decoded = jwtDecode<any>(accessToken);
+          currentUserIdValue = decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+          currentUserId.value = currentUserIdValue;
+        } catch (err) {
+          console.error('Invalid access token', err);
+        }
+      }
+      
+      // Then fetch users and filter out current user
       const res = await fetchWithAuth(`${API_URL}/Users`);
       const data = await res.json();
-      store.authors = transformUserData(data);
+      const allUsers = transformUserData(data);
+      
+      // Filter out current user from the list
+      const filteredUsers = currentUserIdValue 
+        ? allUsers.filter(user => user.id.toString() !== currentUserIdValue)
+        : allUsers;
+      
+      store.authors = filteredUsers;
     } catch (error) {
       console.error('Failed to fetch users:', error);
       store.authors = [];
