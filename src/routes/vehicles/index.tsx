@@ -79,8 +79,16 @@ export default component$(() => {
           <div class="bg-white rounded shadow p-6 min-h-[600px]">
             {store.loading ? (
               <div class="space-y-4">
-                <div class="flex justify-start mb-4 px-6">
+                {/* Search, Create Vehicle and Status History Section Skeleton */}
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4 px-6">
+                  {/* Create Vehicle Button Skeleton */}
                   <div class="h-10 w-32 bg-gray-200 rounded-lg animate-pulse"></div>
+                  {/* Search Input Skeleton */}
+                  <div class="flex-1 max-w-md mx-4">
+                    <div class="h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+                  </div>
+                  {/* View Status History Button Skeleton */}
+                  <div class="h-10 w-40 bg-gray-200 rounded-lg animate-pulse"></div>
                 </div>
                 <div class="overflow-x-auto">
                   <table class="min-w-full bg-white rounded-lg">

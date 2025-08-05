@@ -52,11 +52,12 @@ export const Sidebar = component$(() => {
       currentPath.startsWith('/edit-company')
     )) return true;
     
-    // Vehicle-related routes
+    // Vehicle-related routes (including status logs)
     if (item.href === '/vehicles' && (
       currentPath.startsWith('/vehicles') || 
       currentPath.startsWith('/create-vehicle') || 
-      currentPath.startsWith('/edit-vehicle')
+      currentPath.startsWith('/edit-vehicle') ||
+      currentPath.startsWith('/vehicle-status-logs')
     )) return true;
     
     // User-related routes

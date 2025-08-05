@@ -46,14 +46,34 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
   const showPricingDialog = useSignal(false);
   const pricingVehicleId = useSignal<string | null>(null);
 
+  // Add search functionality
+  const searchTerm = useSignal('');
+
+  // Filter vehicles based on search term
+  const filteredVehicles = useComputed$(() => {
+    if (!searchTerm.value.trim()) {
+      return vehicles;
+    }
+    
+    const searchLower = searchTerm.value.toLowerCase().trim();
+    return vehicles.filter((vehicle) => 
+      vehicle.companyName.toLowerCase().includes(searchLower) ||
+      vehicle.licensePlate.toLowerCase().includes(searchLower) ||
+      vehicle.brand.toLowerCase().includes(searchLower) ||
+      vehicle.status.toLowerCase().includes(searchLower) ||
+      vehicle.yearManufacture.toString().includes(searchLower) ||
+      vehicle.mileage.toString().includes(searchLower)
+    );
+  });
+
   const totalPages = useComputed$(() =>
-    Math.ceil((vehicles.length || 0) / ITEMS_PER_PAGE)
+    Math.ceil((filteredVehicles.value.length || 0) / ITEMS_PER_PAGE)
   );
 
   const paginatedVehicles = useComputed$(() => {
     const startIndex = (currentPage.value - 1) * ITEMS_PER_PAGE;
     const endIndex = currentPage.value * ITEMS_PER_PAGE;
-    return vehicles.slice(startIndex, endIndex);
+    return filteredVehicles.value.slice(startIndex, endIndex);
   });
 
   const handleEdit = $(async (vehicleId: string) => {
@@ -249,7 +269,9 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
         />
       )}
       
-      <div class="flex justify-start mb-4 px-6">
+      {/* Search, Create Vehicle and Status History Section */}
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4 px-6">
+        {/* Create Vehicle Button */}
         <button
           onClick$={() => (window.location.href = '/create-vehicle')}
           class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg shadow transition duration-150"
@@ -259,7 +281,65 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
           </svg>
           Create Vehicle
         </button>
+
+        {/* Search Input */}
+        <div class="flex-1 max-w-md mx-4">
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+            <input
+              type="text"
+              placeholder="Search by company, license plate, brand, year, mileage..."
+              value={searchTerm.value}
+              onInput$={(e) => {
+                searchTerm.value = (e.target as HTMLInputElement).value;
+                currentPage.value = 1; // Reset to first page when searching
+              }}
+              class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+            />
+            {searchTerm.value && (
+              <button
+                onClick$={() => {
+                  searchTerm.value = '';
+                  currentPage.value = 1;
+                }}
+                class="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                <svg class="w-4 h-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* View Status History Button */}
+        <button
+          onClick$={() => (window.location.href = '/vehicle-status-logs')}
+          class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg shadow transition duration-150"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          View Status History
+        </button>
       </div>
+
+      {/* Search Results Info */}
+      {searchTerm.value && (
+        <div class="px-6 mb-4">
+          <p class="text-sm text-gray-600">
+            {filteredVehicles.value.length === 0 ? (
+              <>No vehicles found for "<span class="font-medium">{searchTerm.value}</span>"</>
+            ) : (
+              <>Found {filteredVehicles.value.length} vehicle{filteredVehicles.value.length !== 1 ? 's' : ''} for "<span class="font-medium">{searchTerm.value}</span>"</>
+            )}
+          </p>
+        </div>
+      )}
 
       <div class="overflow-x-auto">
         <table class="min-w-full bg-white rounded-lg table-fixed">

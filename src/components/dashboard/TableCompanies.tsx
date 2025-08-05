@@ -27,14 +27,32 @@ export default component$<TableCompaniesProps>(({ companies }) => {
   const showDeleteDialog = useSignal(false);
   const deletingCompanyId = useSignal<number | null>(null);
 
+  // Add search functionality
+  const searchTerm = useSignal('');
+
+  // Filter companies based on search term
+  const filteredCompanies = useComputed$(() => {
+    if (!searchTerm.value.trim()) {
+      return companies;
+    }
+    
+    const searchLower = searchTerm.value.toLowerCase().trim();
+    return companies.filter((company) => 
+      company.name.toLowerCase().includes(searchLower) ||
+      company.email.toLowerCase().includes(searchLower) ||
+      company.phone.toLowerCase().includes(searchLower) ||
+      company.address.toLowerCase().includes(searchLower)
+    );
+  });
+
   const totalPages = useComputed$(() =>
-    Math.ceil((companies.length || 0) / ITEMS_PER_PAGE)
+    Math.ceil((filteredCompanies.value.length || 0) / ITEMS_PER_PAGE)
   );
 
   const paginatedCompanies = useComputed$(() => {
     const startIndex = (currentPage.value - 1) * ITEMS_PER_PAGE;
     const endIndex = currentPage.value * ITEMS_PER_PAGE;
-    return companies.slice(startIndex, endIndex);
+    return filteredCompanies.value.slice(startIndex, endIndex);
   });
 
 
@@ -195,7 +213,43 @@ export default component$<TableCompaniesProps>(({ companies }) => {
         </div>
       )}
       
-      <div class="flex justify-start mb-4 px-6">
+      {/* Search and Create Company Section */}
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4 px-6">
+        {/* Search Input */}
+        <div class="flex-1 max-w-md">
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+            <input
+              type="text"
+              placeholder="Search by name, email, phone, or address..."
+              value={searchTerm.value}
+              onInput$={(e) => {
+                searchTerm.value = (e.target as HTMLInputElement).value;
+                currentPage.value = 1; // Reset to first page when searching
+              }}
+              class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+            />
+            {searchTerm.value && (
+              <button
+                onClick$={() => {
+                  searchTerm.value = '';
+                  currentPage.value = 1;
+                }}
+                class="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                <svg class="w-4 h-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Create Company Button */}
         <button
           onClick$={() => (window.location.href = '/create-company')}
           class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg shadow transition duration-150"
@@ -206,6 +260,19 @@ export default component$<TableCompaniesProps>(({ companies }) => {
           Create Company
         </button>
       </div>
+
+      {/* Search Results Info */}
+      {searchTerm.value && (
+        <div class="px-6 mb-4">
+          <p class="text-sm text-gray-600">
+            {filteredCompanies.value.length === 0 ? (
+              <>No companies found for "<span class="font-medium">{searchTerm.value}</span>"</>
+            ) : (
+              <>Found {filteredCompanies.value.length} compan{filteredCompanies.value.length !== 1 ? 'ies' : 'y'} for "<span class="font-medium">{searchTerm.value}</span>"</>
+            )}
+          </p>
+        </div>
+      )}
 
       <div class="overflow-x-auto">
         <table class="min-w-full bg-white rounded-lg table-fixed">

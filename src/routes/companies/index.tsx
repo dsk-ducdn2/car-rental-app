@@ -59,7 +59,13 @@ export default component$(() => {
           <div class="bg-white rounded shadow p-6 min-h-[600px]">
             {store.loading ? (
               <div class="space-y-4">
-                <div class="flex justify-start mb-4 px-6">
+                {/* Search and Create Company Section Skeleton */}
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4 px-6">
+                  {/* Search Input Skeleton */}
+                  <div class="flex-1 max-w-md">
+                    <div class="h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+                  </div>
+                  {/* Create Company Button Skeleton */}
                   <div class="h-10 w-32 bg-gray-200 rounded-lg animate-pulse"></div>
                 </div>
                 <div class="overflow-x-auto">

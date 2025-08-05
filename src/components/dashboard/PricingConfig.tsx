@@ -128,10 +128,8 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
       return;
     }
 
-    const isUpdate = Boolean(currentPricing.value?.id);
-    const url = isUpdate 
-      ? `${API_URL}/VehiclePricing/${currentPricing.value!.id}` 
-      : `${API_URL}/VehiclePricing`;
+    // Use single upsert API endpoint
+    const url = `${API_URL}/VehiclePricing/vehicle/${vehicleId}`;
     
     const body = {
       vehicleId: vehicleId,
@@ -144,7 +142,7 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
 
     try {
       const res = await fetchWithAuth(url, {
-        method: isUpdate ? 'PUT' : 'POST',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -296,7 +294,7 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
                 type="submit"
                 class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                {currentPricing.value?.id ? 'Update Pricing' : 'Create Pricing'}
+                Save Pricing
               </button>
             </div>
           </form>

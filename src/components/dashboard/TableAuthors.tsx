@@ -25,14 +25,33 @@ export default component$<TableAuthorsProps>(({ authors }) => {
   const notificationType = useSignal<'success' | 'error'>('success');
   const API_URL = import.meta.env.VITE_API_URL;
   const userId = useSignal<string | undefined>(undefined);
+  
+  // Add search functionality
+  const searchTerm = useSignal('');
 
   // Thêm state cho dialog xóa và loading bar
   const showDeleteDialog = useSignal(false);
   const deletingUserId = useSignal<number | null>(null);
   // Use useComputed$ to ensure paginatedAuthors updates when currentPage or authors change
   const filteredAuthors = useComputed$(() => {
-  if (!userId.value) return authors;
-    return authors.filter((author) => author.id.toString() !== userId.value);
+    let filtered = authors;
+    
+    // Filter out current user if userId is set
+    if (userId.value) {
+      filtered = filtered.filter((author) => author.id.toString() !== userId.value);
+    }
+    
+    // Apply search filter
+    if (searchTerm.value.trim()) {
+      const searchLower = searchTerm.value.toLowerCase().trim();
+      filtered = filtered.filter((author) => 
+        author.name.toLowerCase().includes(searchLower) ||
+        author.email.toLowerCase().includes(searchLower) ||
+        author.phoneNumber.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    return filtered;
   });
 
   const totalPages = useComputed$(() =>
@@ -359,17 +378,66 @@ export default component$<TableAuthorsProps>(({ authors }) => {
           </div>
         </div>
       )}
-      <div class="flex justify-start mb-4 px-6">
-      <button
-        onClick$={() => (window.location.href = '/create-user')}
-        class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg shadow transition duration-150"
-      >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-        </svg>
-        Create User
-      </button>
+      {/* Search and Create User Section */}
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4 px-6">
+        {/* Search Input */}
+        <div class="flex-1 max-w-md">
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+            <input
+              type="text"
+              placeholder="Search by name, email, or phone..."
+              value={searchTerm.value}
+              onInput$={(e) => {
+                searchTerm.value = (e.target as HTMLInputElement).value;
+                currentPage.value = 1; // Reset to first page when searching
+              }}
+              class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+            />
+            {searchTerm.value && (
+              <button
+                onClick$={() => {
+                  searchTerm.value = '';
+                  currentPage.value = 1;
+                }}
+                class="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                <svg class="w-4 h-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Create User Button */}
+        <button
+          onClick$={() => (window.location.href = '/create-user')}
+          class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg shadow transition duration-150"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          Create User
+        </button>
       </div>
+
+      {/* Search Results Info */}
+      {searchTerm.value && (
+        <div class="px-6 mb-4">
+          <p class="text-sm text-gray-600">
+            {filteredAuthors.value.length === 0 ? (
+              <>No users found for "<span class="font-medium">{searchTerm.value}</span>"</>
+            ) : (
+              <>Found {filteredAuthors.value.length} user{filteredAuthors.value.length !== 1 ? 's' : ''} for "<span class="font-medium">{searchTerm.value}</span>"</>
+            )}
+          </p>
+        </div>
+      )}
 
       <div class="overflow-x-auto">
         <table class="min-w-full bg-white rounded-lg table-fixed">
