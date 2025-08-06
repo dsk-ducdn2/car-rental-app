@@ -21,6 +21,7 @@ export default component$(() => {
       status: string;
       mileage: number;
       purchaseDate: string;
+      pricePerDay: number;
     },
     loading: true
   });
@@ -30,6 +31,11 @@ export default component$(() => {
     try {
       const res = await fetchWithAuth(`${API_URL}/Vehicles/${vehicleId}`);
       const data = await res.json();
+      // Get the active pricing rule (the one with the latest effective date or current price)
+      const activePricingRule = data.vehiclePricingRules && data.vehiclePricingRules.length > 0 
+        ? data.vehiclePricingRules[0] 
+        : null;
+      
       store.vehicle = {
         id: data.id,
         companyId: data.companyId || '',
@@ -40,6 +46,7 @@ export default component$(() => {
         status: data.status || 'AVAILABLE',
         mileage: data.mileage || 0,
         purchaseDate: data.purchaseDate ? data.purchaseDate.split('T')[0] : '',
+        pricePerDay: activePricingRule?.pricePerDay || 0,
       };
     } catch (error) {
       console.error('Failed to fetch vehicle:', error);
@@ -61,7 +68,7 @@ export default component$(() => {
               <div class="flex justify-center items-center min-h-[400px] bg-gray-50">
                 <div class="bg-white shadow-lg rounded-lg p-8 w-full max-w-xl space-y-6 border border-gray-200">
                   <div class="h-8 bg-gray-200 rounded animate-pulse mb-6"></div>
-                  {Array.from({ length: 7 }).map((_, idx) => (
+                  {Array.from({ length: 8 }).map((_, idx) => (
                     <div key={idx} class="space-y-2">
                       <div class="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
                       <div class="h-10 bg-gray-200 rounded animate-pulse"></div>

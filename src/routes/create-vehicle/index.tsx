@@ -13,6 +13,7 @@ export default component$(() => {
     status: 'AVAILABLE',
     mileage: 0,
     purchaseDate: '',
+    pricePerDay: 0,
   };
 
   return (

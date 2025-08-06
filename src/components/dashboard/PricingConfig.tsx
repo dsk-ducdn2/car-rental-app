@@ -8,14 +8,20 @@ import {
 } from '@builder.io/qwik';
 import { fetchWithAuth } from '../../utils/api';
 
-interface VehiclePricing {
-  id?: string;
-  vehicleId: string;
-  pricePerDay: number;
-  weekendMultiplier: number;
+interface VehiclePricingRuleDto {
+  vehicleId?: string;
+  pricePerDay?: number;
+  holidayMultiplier?: number;
+  effectiveDate?: string;
+  expiryDate?: string;
+}
+
+interface PricingRule {
+  id: string;
   holidayMultiplier: number;
   effectiveDate: string;
   expiryDate: string;
+  calculatedPrice: number;
 }
 
 interface PricingConfigProps {
@@ -27,53 +33,141 @@ interface PricingConfigProps {
 export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }) => {
   const API_URL = import.meta.env.VITE_API_URL;
   const loading = useSignal(true);
-  const currentPricing = useSignal<VehiclePricing | null>(null);
-
-  const pricePerDay = useSignal('0');
-  const weekendMultiplier = useSignal('1.2');
-  const holidayMultiplier = useSignal('1.5');
-  const effectiveDate = useSignal('');
-  const expiryDate = useSignal('');
+  const originalPricePerDay = useSignal(0); // Store original price from vehicle details
+  const pricingRules = useSignal<PricingRule[]>([]);
 
   const toastState = useStore({ visible: false });
-
-  const formErrors = useStore({
-    pricePerDay: '',
-    weekendMultiplier: '',
-    holidayMultiplier: '',
-    effectiveDate: '',
-    expiryDate: '',
-  });
 
   const formState = useStore({
     serverError: '',
   });
 
-  // Fetch current pricing
+  // Helper function to calculate price
+  const calculatePrice = $((multiplier: number) => {
+    return originalPricePerDay.value * multiplier;
+  });
+
+  // Helper function to check if two date ranges overlap
+  const checkDateOverlap = $((start1: string, end1: string, start2: string, end2: string) => {
+    const startDate1 = new Date(start1);
+    const endDate1 = new Date(end1);
+    const startDate2 = new Date(start2);
+    const endDate2 = new Date(end2);
+    
+    // Check if ranges overlap: start1 <= end2 && start2 <= end1
+    return startDate1 <= endDate2 && startDate2 <= endDate1;
+  });
+
+  // Helper function to validate date ranges for overlaps
+  const validateDateRanges = $(async (newRule: PricingRule, excludeRuleId?: string) => {
+    for (const existingRule of pricingRules.value) {
+      // Skip validation against the same rule (for updates)
+      if (excludeRuleId && existingRule.id === excludeRuleId) {
+        continue;
+      }
+      
+      const hasOverlap = await checkDateOverlap(
+        newRule.effectiveDate, 
+        newRule.expiryDate, 
+        existingRule.effectiveDate, 
+        existingRule.expiryDate
+      );
+      
+      if (hasOverlap) {
+        return {
+          hasOverlap: true,
+          message: `Date range overlaps with existing rule (${existingRule.effectiveDate} to ${existingRule.expiryDate})`
+        };
+      }
+    }
+    return { hasOverlap: false, message: '' };
+  });
+
+  // Add new pricing rule
+  const addPricingRule = $(async () => {
+    // Clear previous errors
+    formState.serverError = '';
+    
+    const today = new Date().toISOString().split('T')[0];
+    const nextYear = new Date();
+    nextYear.setFullYear(nextYear.getFullYear() + 1);
+    
+    const calculatedPrice = await calculatePrice(1);
+    
+    const newRule: PricingRule = {
+      id: Math.random().toString(36).substr(2, 9),
+      holidayMultiplier: 1,
+      effectiveDate: today,
+      expiryDate: nextYear.toISOString().split('T')[0],
+      calculatedPrice: calculatedPrice
+    };
+    
+    pricingRules.value = [...pricingRules.value, newRule];
+  });
+
+  // Delete pricing rule
+  const deletePricingRule = $((ruleId: string) => {
+    pricingRules.value = pricingRules.value.filter(rule => rule.id !== ruleId);
+  });
+
+  // Update pricing rule
+  const updatePricingRule = $(async (ruleId: string, field: keyof PricingRule, value: any) => {
+    // Clear previous errors
+    formState.serverError = '';
+    
+    const updatedRules = await Promise.all(
+      pricingRules.value.map(async (rule) => {
+        if (rule.id === ruleId) {
+          const updatedRule = { ...rule, [field]: value };
+          // Recalculate price if multiplier changed
+          if (field === 'holidayMultiplier') {
+            updatedRule.calculatedPrice = await calculatePrice(parseFloat(value) || 0);
+          }
+          
+          return updatedRule;
+        }
+        return rule;
+      })
+    );
+    pricingRules.value = updatedRules;
+  });
+
+  // Fetch vehicle details and current pricing
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async () => {
     try {
-      const res = await fetchWithAuth(`${API_URL}/VehiclePricing/vehicle/${vehicleId}`);
+      // First, fetch vehicle details to get original price_per_day
+      const vehicleRes = await fetchWithAuth(`${API_URL}/Vehicles/${vehicleId}`);
+      if (vehicleRes.ok) {
+        const vehicleData = await vehicleRes.json();
+        // Get the original price from vehicle pricing rules or default
+        const activePricingRule = vehicleData.vehiclePricingRules && vehicleData.vehiclePricingRules.length > 0 
+          ? vehicleData.vehiclePricingRules[0] 
+          : null;
+        originalPricePerDay.value = activePricingRule?.pricePerDay || 100; // Default to 100 if no price found
+      }
+
+      // Then fetch current pricing configuration
+      const res = await fetchWithAuth(`${API_URL}/VehiclePricingRule/${vehicleId}`);
       if (res.ok) {
         const data = await res.json();
         if (data) {
-          currentPricing.value = data;
-          pricePerDay.value = data.pricePerDay.toString();
-          weekendMultiplier.value = data.weekendMultiplier.toString();
-          holidayMultiplier.value = data.holidayMultiplier.toString();
-          effectiveDate.value = data.effectiveDate ? data.effectiveDate.split('T')[0] : '';
-          expiryDate.value = data.expiryDate ? data.expiryDate.split('T')[0] : '';
+          // Convert existing pricing to rule format
+          const existingRule: PricingRule = {
+            id: Math.random().toString(36).substr(2, 9),
+            holidayMultiplier: data.holidayMultiplier,
+            effectiveDate: data.effectiveDate ? data.effectiveDate.split('T')[0] : '',
+            expiryDate: data.expiryDate ? data.expiryDate.split('T')[0] : '',
+            calculatedPrice: data.pricePerDay
+          };
+          pricingRules.value = [existingRule];
         }
       } else {
-        // No existing pricing, set defaults
-        const today = new Date().toISOString().split('T')[0];
-        effectiveDate.value = today;
-        const nextYear = new Date();
-        nextYear.setFullYear(nextYear.getFullYear() + 1);
-        expiryDate.value = nextYear.toISOString().split('T')[0];
+        // No existing pricing, leave rules empty - user will create manually
+        pricingRules.value = [];
       }
     } catch (error) {
-      console.error('Failed to fetch pricing:', error);
+      console.error('Failed to fetch vehicle or pricing data:', error);
     } finally {
       loading.value = false;
     }
@@ -83,66 +177,68 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
     e.preventDefault();
     
     // Clear previous errors
-    formErrors.pricePerDay = '';
-    formErrors.weekendMultiplier = '';
-    formErrors.holidayMultiplier = '';
-    formErrors.effectiveDate = '';
-    formErrors.expiryDate = '';
     formState.serverError = '';
 
-    // Client-side validation
-    let hasError = false;
-
-    if (!pricePerDay.value.trim() || parseFloat(pricePerDay.value) <= 0) {
-      formErrors.pricePerDay = 'Price per day must be greater than 0';
-      hasError = true;
-    }
-
-    if (!weekendMultiplier.value.trim() || parseFloat(weekendMultiplier.value) <= 0) {
-      formErrors.weekendMultiplier = 'Weekend multiplier must be greater than 0';
-      hasError = true;
-    }
-
-    if (!holidayMultiplier.value.trim() || parseFloat(holidayMultiplier.value) <= 0) {
-      formErrors.holidayMultiplier = 'Holiday multiplier must be greater than 0';
-      hasError = true;
-    }
-
-    if (!effectiveDate.value.trim()) {
-      formErrors.effectiveDate = 'Effective date is required';
-      hasError = true;
-    }
-
-    if (!expiryDate.value.trim()) {
-      formErrors.expiryDate = 'Expiry date is required';
-      hasError = true;
-    }
-
-    if (effectiveDate.value && expiryDate.value && effectiveDate.value >= expiryDate.value) {
-      formErrors.expiryDate = 'Expiry date must be after effective date';
-      hasError = true;
-    }
-
-    // Stop submission if validation fails
-    if (hasError) {
+    // Basic validation - ensure we have at least one rule
+    if (pricingRules.value.length === 0) {
+      formState.serverError = 'At least one pricing rule is required';
       return;
     }
 
-    // Use single upsert API endpoint
-    const url = `${API_URL}/VehiclePricing/vehicle/${vehicleId}`;
-    
-    const body = {
-      vehicleId: vehicleId,
-      pricePerDay: parseFloat(pricePerDay.value),
-      weekendMultiplier: parseFloat(weekendMultiplier.value),
-      holidayMultiplier: parseFloat(holidayMultiplier.value),
-      effectiveDate: effectiveDate.value,
-      expiryDate: expiryDate.value,
-    };
+    // Validate each rule
+    for (const rule of pricingRules.value) {
+      if (!rule.effectiveDate || !rule.expiryDate) {
+        formState.serverError = 'All fields are required for each pricing rule';
+        return;
+      }
+      if (rule.effectiveDate >= rule.expiryDate) {
+        formState.serverError = 'Expiry date must be after effective date';
+        return;
+      }
+      if (rule.holidayMultiplier <= 0) {
+        formState.serverError = 'Holiday multiplier must be greater than 0';
+        return;
+      }
+    }
+
+    // Final check for overlapping date ranges between all rules
+    for (let i = 0; i < pricingRules.value.length; i++) {
+      for (let j = i + 1; j < pricingRules.value.length; j++) {
+        const rule1 = pricingRules.value[i];
+        const rule2 = pricingRules.value[j];
+        const hasOverlap = await checkDateOverlap(rule1.effectiveDate, rule1.expiryDate, rule2.effectiveDate, rule2.expiryDate);
+        if (hasOverlap) {
+          formState.serverError = `Date ranges overlap between rules: (${rule1.effectiveDate} to ${rule1.expiryDate}) and (${rule2.effectiveDate} to ${rule2.expiryDate})`;
+          return;
+        }
+      }
+    }
 
     try {
+      // Send all pricing rules as an array to match the new API
+      const url = 'https://localhost:44391/api/VehiclePricingRule';
+      
+      // Format dates to include time as shown in the example
+      const formatDateTime = (dateStr: string) => {
+        // Create date with specific time format: YYYY-MM-DDTHH:mm:ss.sssZ
+        const date = new Date(dateStr + 'T08:34:51.137Z');
+        return date.toISOString();
+      };
+      
+      // Convert all pricing rules to the format expected by the API
+      const body = pricingRules.value.map(rule => ({
+        vehicleId: vehicleId,
+        pricePerDay: rule.calculatedPrice, // Use the calculated price instead of 0
+        holidayMultiplier: rule.holidayMultiplier,
+        effectiveDate: formatDateTime(rule.effectiveDate),
+        expiryDate: formatDateTime(rule.expiryDate),
+      }));
+
+      console.log('Sending request to:', url);
+      console.log('Request body:', JSON.stringify(body, null, 2));
+
       const res = await fetchWithAuth(url, {
-        method: 'PUT',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -150,6 +246,8 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
       });
 
       if (res.ok) {
+        const resultData = await res.json();
+        console.log('Success! Pricing rules processed:', resultData);
         toastState.visible = true;
         setTimeout(() => {
           toastState.visible = false;
@@ -157,11 +255,18 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
           onClose();
         }, 2000);
       } else {
+        console.error('API Error:', res.status, res.statusText);
         const result = await res.json().catch(() => null);
+        console.error('Error response:', result);
+        
         if (result && result.message) {
           formState.serverError = result.message;
+        } else if (result && result.errors) {
+          // Handle validation errors
+          const errorMessages = Object.values(result.errors).flat().join(', ');
+          formState.serverError = `Validation errors: ${errorMessages}`;
         } else {
-          formState.serverError = 'Internal Server Error. Please try again.';
+          formState.serverError = `Server Error (${res.status}): ${res.statusText}. Please check the request format.`;
         }
       }
     } catch (err) {
@@ -175,7 +280,7 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
       class="fixed inset-0 flex items-center justify-center z-50"
       style="background-color: rgba(0, 0, 0, 0.3); backdrop-filter: blur(2px);"
     >
-      <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 relative shadow-2xl max-h-[90vh] overflow-y-auto">
         {/* Close button */}
         <button
           onClick$={onClose}
@@ -191,7 +296,7 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
         
         {loading.value ? (
           <div class="space-y-4">
-            {Array.from({ length: 6 }).map((_, idx) => (
+            {Array.from({ length: 4 }).map((_, idx) => (
               <div key={idx} class="space-y-2">
                 <div class="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
                 <div class="h-10 bg-gray-200 rounded animate-pulse"></div>
@@ -199,81 +304,119 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
             ))}
           </div>
         ) : (
-          <form preventdefault:submit onSubmit$={handleSubmit} class="space-y-4">
-            <div>
-              <label class="block text-sm font-semibold mb-1 text-gray-700">Price Per Day ($)</label>
-              <input
-                type="number"
-                value={pricePerDay.value}
-                onInput$={(e) => (pricePerDay.value = (e.target as HTMLInputElement).value)}
-                class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                placeholder="e.g., 50.00"
-                min="0"
-                step="0.01"
-              />
-              {formErrors.pricePerDay && (
-                <div class="text-red-600 text-sm mt-1">{formErrors.pricePerDay}</div>
-              )}
+          <form preventdefault:submit onSubmit$={handleSubmit} class="space-y-6">
+            {/* Original Price Display */}
+            <div class="bg-gray-50 border-2 border-gray-300 rounded-lg p-4 text-center">
+              <div class="text-2xl font-bold text-gray-800">
+                ${originalPricePerDay.value.toFixed(2)}
+              </div>
+              <div class="text-sm text-gray-600 mt-1">Original Vehicle Price per Day</div>
             </div>
 
-            <div>
-              <label class="block text-sm font-semibold mb-1 text-gray-700">Weekend Multiplier</label>
-              <input
-                type="number"
-                value={weekendMultiplier.value}
-                onInput$={(e) => (weekendMultiplier.value = (e.target as HTMLInputElement).value)}
-                class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                placeholder="e.g., 1.2 (120%)"
-                min="0"
-                step="0.1"
-              />
-              {formErrors.weekendMultiplier && (
-                <div class="text-red-600 text-sm mt-1">{formErrors.weekendMultiplier}</div>
+            {/* Pricing Rules Table */}
+            <div class="space-y-3">
+              {pricingRules.value.length > 0 && (
+                <div class="flex justify-between items-center">
+                  <div class="grid grid-cols-5 gap-4 text-sm font-semibold text-gray-700 px-2 flex-1">
+                    <div>Multiplier</div>
+                    <div>Effective Date</div>
+                    <div>Expiry Date</div>
+                    <div>Calculated Price</div>
+                    <div>Actions</div>
+                  </div>
+                  <div class="ml-4">
+                    <button
+                      type="button"
+                      onClick$={addPricingRule}
+                      class="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                      </svg>
+                      Add Rule
+                    </button>
+                  </div>
+                </div>
               )}
-              <div class="text-xs text-gray-500 mt-1">Multiplier for weekend rates (e.g., 1.2 = 20% increase)</div>
-            </div>
 
-            <div>
-              <label class="block text-sm font-semibold mb-1 text-gray-700">Holiday Multiplier</label>
-              <input
-                type="number"
-                value={holidayMultiplier.value}
-                onInput$={(e) => (holidayMultiplier.value = (e.target as HTMLInputElement).value)}
-                class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                placeholder="e.g., 1.5 (150%)"
-                min="0"
-                step="0.1"
-              />
-              {formErrors.holidayMultiplier && (
-                <div class="text-red-600 text-sm mt-1">{formErrors.holidayMultiplier}</div>
-              )}
-              <div class="text-xs text-gray-500 mt-1">Multiplier for holiday rates (e.g., 1.5 = 50% increase)</div>
-            </div>
+              {pricingRules.value.length === 0 ? (
+                <div class="text-center py-8 text-gray-500">
+                  <div class="mb-4">
+                    <svg class="w-12 h-12 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                  </div>
+                  <p class="text-lg font-medium mb-2">No Pricing Rules</p>
+                  <p class="text-sm mb-4">Create your first pricing rule to configure vehicle pricing</p>
+                  <button
+                    type="button"
+                    onClick$={addPricingRule}
+                    class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Create First Rule
+                  </button>
+                </div>
+              ) : (
+                pricingRules.value.map((rule, index) => (
+                <div key={rule.id} class="grid grid-cols-5 gap-4 items-center p-3 bg-gray-50 rounded-lg border">
+                  {/* Holiday Multiplier */}
+                  <div>
+                    <input
+                      type="number"
+                      value={rule.holidayMultiplier}
+                      onInput$={$(async (e) => await updatePricingRule(rule.id, 'holidayMultiplier', parseFloat((e.target as HTMLInputElement).value) || 0))}
+                      class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      placeholder="1"
+                      min="0"
+                      step="0.1"
+                    />
+                  </div>
 
-            <div>
-              <label class="block text-sm font-semibold mb-1 text-gray-700">Effective Date</label>
-              <input
-                type="date"
-                value={effectiveDate.value}
-                onInput$={(e) => (effectiveDate.value = (e.target as HTMLInputElement).value)}
-                class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-              {formErrors.effectiveDate && (
-                <div class="text-red-600 text-sm mt-1">{formErrors.effectiveDate}</div>
-              )}
-            </div>
+                  {/* Effective Date */}
+                  <div>
+                    <input
+                      type="date"
+                      value={rule.effectiveDate}
+                      onInput$={$(async (e) => await updatePricingRule(rule.id, 'effectiveDate', (e.target as HTMLInputElement).value))}
+                      class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    />
+                  </div>
 
-            <div>
-              <label class="block text-sm font-semibold mb-1 text-gray-700">Expiry Date</label>
-              <input
-                type="date"
-                value={expiryDate.value}
-                onInput$={(e) => (expiryDate.value = (e.target as HTMLInputElement).value)}
-                class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-              {formErrors.expiryDate && (
-                <div class="text-red-600 text-sm mt-1">{formErrors.expiryDate}</div>
-              )}
+                  {/* Expiry Date */}
+                  <div>
+                    <input
+                      type="date"
+                      value={rule.expiryDate}
+                      onInput$={$(async (e) => await updatePricingRule(rule.id, 'expiryDate', (e.target as HTMLInputElement).value))}
+                      class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    />
+                  </div>
+
+                  {/* Calculated Price */}
+                  <div>
+                    <div class="bg-blue-50 border border-blue-200 rounded px-3 py-2 text-sm font-semibold text-blue-800">
+                      ${rule.calculatedPrice.toFixed(2)}
+                    </div>
+                  </div>
+
+                  {/* Delete Button */}
+                  <div>
+                    <button
+                      type="button"
+                      onClick$={() => deletePricingRule(rule.id)}
+                      class="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                      disabled={pricingRules.value.length === 1}
+                    >
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )))}
             </div>
 
             {formState.serverError && (
@@ -302,8 +445,8 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
 
         {/* Toast Notification */}
         {toastState.visible && (
-          <div class="fixed top-4 right-4 bg-yellow-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
-            Pricing updated successfully!
+          <div class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+            Pricing rules saved successfully!
           </div>
         )}
       </div>

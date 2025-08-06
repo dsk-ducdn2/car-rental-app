@@ -18,6 +18,7 @@ interface Vehicle {
   status: string;
   mileage: number;
   purchaseDate: string;
+  pricePerDay: number;
 }
 
 interface Company {
@@ -39,6 +40,7 @@ export default component$((props: { vehicle: Vehicle }) => {
   const status = useSignal(vehicle.status);
   const mileage = useSignal(vehicle.mileage.toString());
   const purchaseDate = useSignal(vehicle.purchaseDate);
+  const price = useSignal(vehicle.pricePerDay.toString());
 
   const toastState = useStore({ visible: false });
   const companies = useSignal<Company[]>([]);
@@ -52,6 +54,7 @@ export default component$((props: { vehicle: Vehicle }) => {
     status: '',
     mileage: '',
     purchaseDate: '',
+    price: '',
   });
 
   const formState = useStore({
@@ -82,6 +85,7 @@ export default component$((props: { vehicle: Vehicle }) => {
     formErrors.status = '';
     formErrors.mileage = '';
     formErrors.purchaseDate = '';
+    formErrors.price = '';
     formState.serverError = '';
 
     // Client-side validation
@@ -134,6 +138,17 @@ export default component$((props: { vehicle: Vehicle }) => {
       hasError = true;
     }
 
+    if (!price.value.trim()) {
+      formErrors.price = 'Price is required';
+      hasError = true;
+    } else {
+      const priceNumber = parseFloat(price.value);
+      if (isNaN(priceNumber) || priceNumber < 0) {
+        formErrors.price = 'Please enter a valid price';
+        hasError = true;
+      }
+    }
+
     // Stop submission if validation fails
     if (hasError) {
       return;
@@ -152,6 +167,7 @@ export default component$((props: { vehicle: Vehicle }) => {
       status: status.value,
       mileage: parseFloat(mileage.value),
       purchaseDate: purchaseDate.value,
+      pricePerDay: parseFloat(price.value),
     };
 
     try {
@@ -183,6 +199,7 @@ export default component$((props: { vehicle: Vehicle }) => {
           if (result.status) formErrors.status = result.status;
           if (result.mileage) formErrors.mileage = result.mileage;
           if (result.purchaseDate) formErrors.purchaseDate = result.purchaseDate;
+          if (result.pricePerDay) formErrors.price = result.pricePerDay;
           if (result.message) formState.serverError = result.message;
         } else {
           formState.serverError = 'Internal Server Error. Please try again.';
@@ -313,17 +330,35 @@ export default component$((props: { vehicle: Vehicle }) => {
           </div>
         </div>
 
-        <div>
-          <label class="block text-sm font-semibold mb-1 text-gray-700">Purchase Date</label>
-          <input
-            type="date"
-            value={purchaseDate.value}
-            onInput$={(e) => (purchaseDate.value = (e.target as HTMLInputElement).value)}
-            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          {formErrors.purchaseDate && (
-            <div class="text-red-600 text-sm mt-1">{formErrors.purchaseDate}</div>
-          )}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-semibold mb-1 text-gray-700">Purchase Date</label>
+            <input
+              type="date"
+              value={purchaseDate.value}
+              onInput$={(e) => (purchaseDate.value = (e.target as HTMLInputElement).value)}
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            {formErrors.purchaseDate && (
+              <div class="text-red-600 text-sm mt-1">{formErrors.purchaseDate}</div>
+            )}
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold mb-1 text-gray-700">Price (VND)</label>
+            <input
+              type="number"
+              value={price.value}
+              onInput$={(e) => (price.value = (e.target as HTMLInputElement).value)}
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="e.g., 500000"
+              min="0"
+              step="1000"
+            />
+            {formErrors.price && (
+              <div class="text-red-600 text-sm mt-1">{formErrors.price}</div>
+            )}
+          </div>
         </div>
 
         {formState.serverError && (
