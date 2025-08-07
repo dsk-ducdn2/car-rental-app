@@ -89,8 +89,6 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
     formState.serverError = '';
     
     const today = new Date().toISOString().split('T')[0];
-    const nextYear = new Date();
-    nextYear.setFullYear(nextYear.getFullYear() + 1);
     
     const calculatedPrice = await calculatePrice(1);
     
@@ -98,7 +96,7 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
       id: Math.random().toString(36).substr(2, 9),
       holidayMultiplier: 1,
       effectiveDate: today,
-      expiryDate: nextYear.toISOString().split('T')[0],
+      expiryDate: today,
       calculatedPrice: calculatedPrice
     };
     
@@ -152,15 +150,19 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
       if (res.ok) {
         const data = await res.json();
         if (data) {
-          // Convert existing pricing to rule format
-          const existingRule: PricingRule = {
+          // Check if data is an array (multiple records) or single object
+          const dataArray = Array.isArray(data) ? data : [data];
+          
+          // Convert existing pricing rules to rule format
+          const existingRules: PricingRule[] = dataArray.map((item: any) => ({
             id: Math.random().toString(36).substr(2, 9),
-            holidayMultiplier: data.holidayMultiplier,
-            effectiveDate: data.effectiveDate ? data.effectiveDate.split('T')[0] : '',
-            expiryDate: data.expiryDate ? data.expiryDate.split('T')[0] : '',
-            calculatedPrice: data.pricePerDay
-          };
-          pricingRules.value = [existingRule];
+            holidayMultiplier: item.holidayMultiplier || 1,
+            effectiveDate: item.effectiveDate ? item.effectiveDate.split('T')[0] : '',
+            expiryDate: item.expiryDate ? item.expiryDate.split('T')[0] : '',
+            calculatedPrice: item.pricePerDay || 0
+          }));
+          
+          pricingRules.value = existingRules;
         }
       } else {
         // No existing pricing, leave rules empty - user will create manually
@@ -179,9 +181,53 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
     // Clear previous errors
     formState.serverError = '';
 
-    // Basic validation - ensure we have at least one rule
+    // If no pricing rules exist, send an empty array to clear all rules
     if (pricingRules.value.length === 0) {
-      formState.serverError = 'At least one pricing rule is required';
+      try {
+        const url = `https://localhost:44391/api/VehiclePricingRule?vehicleId=${vehicleId}`;
+        
+        // Send an empty array to clear all pricing rules for this vehicle
+        const body: VehiclePricingRuleDto[] = [];
+
+        console.log('Sending request to clear all pricing rules:', url);
+        console.log('Request body:', JSON.stringify(body, null, 2));
+
+        const res = await fetchWithAuth(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        });
+
+        if (res.ok) {
+          const resultData = await res.json();
+          console.log('Success! All pricing rules cleared:', resultData);
+          toastState.visible = true;
+          setTimeout(() => {
+            toastState.visible = false;
+            onSuccess();
+            onClose();
+          }, 2000);
+        } else {
+          console.error('API Error:', res.status, res.statusText);
+          const result = await res.json().catch(() => null);
+          console.error('Error response:', result);
+          
+          if (result && result.message) {
+            formState.serverError = result.message;
+          } else if (result && result.errors) {
+            // Handle validation errors
+            const errorMessages = Object.values(result.errors).flat().join(', ');
+            formState.serverError = `Validation errors: ${errorMessages}`;
+          } else {
+            formState.serverError = `Server Error (${res.status}): ${res.statusText}. Please check the request format.`;
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        formState.serverError = 'An unexpected error occurred.';
+      }
       return;
     }
 
@@ -191,8 +237,8 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
         formState.serverError = 'All fields are required for each pricing rule';
         return;
       }
-      if (rule.effectiveDate >= rule.expiryDate) {
-        formState.serverError = 'Expiry date must be after effective date';
+      if (rule.effectiveDate > rule.expiryDate) {
+        formState.serverError = 'Expiry date must be equal to or after effective date';
         return;
       }
       if (rule.holidayMultiplier <= 0) {
@@ -216,7 +262,7 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
 
     try {
       // Send all pricing rules as an array to match the new API
-      const url = 'https://localhost:44391/api/VehiclePricingRule';
+      const url = `https://localhost:44391/api/VehiclePricingRule?vehicleId=${vehicleId}`;
       
       // Format dates to include time as shown in the example
       const formatDateTime = (dateStr: string) => {
@@ -308,7 +354,7 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
             {/* Original Price Display */}
             <div class="bg-gray-50 border-2 border-gray-300 rounded-lg p-4 text-center">
               <div class="text-2xl font-bold text-gray-800">
-                ${originalPricePerDay.value.toFixed(2)}
+                ${(originalPricePerDay.value || 0).toFixed(2)}
               </div>
               <div class="text-sm text-gray-600 mt-1">Original Vehicle Price per Day</div>
             </div>
@@ -316,15 +362,9 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
             {/* Pricing Rules Table */}
             <div class="space-y-3">
               {pricingRules.value.length > 0 && (
-                <div class="flex justify-between items-center">
-                  <div class="grid grid-cols-5 gap-4 text-sm font-semibold text-gray-700 px-2 flex-1">
-                    <div>Multiplier</div>
-                    <div>Effective Date</div>
-                    <div>Expiry Date</div>
-                    <div>Calculated Price</div>
-                    <div>Actions</div>
-                  </div>
-                  <div class="ml-4">
+                <div class="space-y-3">
+                  <div class="flex justify-between items-center">
+                    <h4 class="text-md font-semibold text-gray-800">Pricing Rules</h4>
                     <button
                       type="button"
                       onClick$={addPricingRule}
@@ -335,6 +375,13 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
                       </svg>
                       Add Rule
                     </button>
+                  </div>
+                  <div class="grid grid-cols-5 gap-4 text-sm font-semibold text-gray-700 px-3 py-2 bg-gray-100 rounded-lg">
+                    <div>Multiplier</div>
+                    <div>Effective Date</div>
+                    <div>Expiry Date</div>
+                    <div>Calculated Price</div>
+                    <div>Actions</div>
                   </div>
                 </div>
               )}
@@ -347,7 +394,7 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
                     </svg>
                   </div>
                   <p class="text-lg font-medium mb-2">No Pricing Rules</p>
-                  <p class="text-sm mb-4">Create your first pricing rule to configure vehicle pricing</p>
+                  <p class="text-sm mb-4">Create your first pricing rule to configure vehicle pricing, or save to clear all existing rules</p>
                   <button
                     type="button"
                     onClick$={addPricingRule}
@@ -361,7 +408,7 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
                 </div>
               ) : (
                 pricingRules.value.map((rule, index) => (
-                <div key={rule.id} class="grid grid-cols-5 gap-4 items-center p-3 bg-gray-50 rounded-lg border">
+                <div key={rule.id} class="grid grid-cols-5 gap-4 items-center px-3 py-2 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
                   {/* Holiday Multiplier */}
                   <div>
                     <input
@@ -398,7 +445,7 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
                   {/* Calculated Price */}
                   <div>
                     <div class="bg-blue-50 border border-blue-200 rounded px-3 py-2 text-sm font-semibold text-blue-800">
-                      ${rule.calculatedPrice.toFixed(2)}
+                      ${(rule.calculatedPrice || 0).toFixed(2)}
                     </div>
                   </div>
 
@@ -408,7 +455,6 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
                       type="button"
                       onClick$={() => deletePricingRule(rule.id)}
                       class="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
-                      disabled={pricingRules.value.length === 1}
                     >
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
