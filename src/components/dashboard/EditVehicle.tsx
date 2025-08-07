@@ -5,7 +5,7 @@ import {
   $,
   useVisibleTask$,
 } from '@builder.io/qwik';
-import { fetchWithAuth } from '~/utils/api';
+import { fetchWithAuth, getUserIdFromToken } from '~/utils/api';
 import '../../routes/index.css';
 
 interface Vehicle {
@@ -159,6 +159,9 @@ export default component$((props: { vehicle: Vehicle }) => {
       ? `${API_URL}/Vehicles/${vehicle.id}` 
       : `${API_URL}/Vehicles`;
     
+    // Get UserId from token
+    const userId = getUserIdFromToken();
+    
     const body = {
       companyId: companyId.value,
       licensePlate: licensePlate.value,
@@ -168,6 +171,7 @@ export default component$((props: { vehicle: Vehicle }) => {
       mileage: parseFloat(mileage.value),
       purchaseDate: purchaseDate.value,
       pricePerDay: parseFloat(price.value),
+      userId: userId,
     };
 
     try {

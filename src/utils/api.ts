@@ -1,4 +1,5 @@
 // src/utils/api.ts
+import { jwtDecode } from 'jwt-decode';
 
 export function getCookie(name: string): string | undefined {
     const value = `; ${document.cookie}`;
@@ -11,6 +12,25 @@ export function getCookie(name: string): string | undefined {
   
   export async function setCookie(name: string, value: string) {
     document.cookie = `${name}=${value}; path=/; secure; samesite=strict`;
+  }
+
+  // Function to decode JWT token and extract user ID
+  export function getUserIdFromToken(): string | null {
+    const accessToken = getCookie('access_token');
+    if (!accessToken) {
+      return null;
+    }
+    
+    try {
+      // Use jwt-decode library for proper JWT decoding
+      const decoded = jwtDecode<any>(accessToken);
+      
+      // Microsoft JWT format uses this specific claim for user ID
+      return decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"] || null;
+    } catch (error) {
+      console.error('Error decoding JWT token:', error);
+      return null;
+    }
   }
   
   export async function tryRefreshToken(): Promise<boolean> {
