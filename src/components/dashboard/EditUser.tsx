@@ -139,7 +139,7 @@ export default component$((props: { user: Author }) => {
 
     try {
       const isUpdate = !!user?.id;
-      console.log('Submitting form:', body);
+
       const url = isUpdate
         ? `${API_URL}/Users/${user.id}`
         : `${API_URL}/Users`;

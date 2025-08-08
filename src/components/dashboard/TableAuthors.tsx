@@ -148,7 +148,7 @@ export default component$<TableAuthorsProps>(({ authors }) => {
   const handleEdit = $(async (authorId: number) => {
     // Edit logic here
     window.location.href = `/edit-user/${authorId}`;
-    console.log(`Edit author ${authorId}`);
+
   });
 
   const handleDelete = $((authorId: number) => {

@@ -62,7 +62,7 @@ export default component$<TableCompaniesProps>(({ companies }) => {
   const handleEdit = $(async (companyId: number) => {
     // Edit logic here
     window.location.href = `/edit-company/${companyId}`;
-    console.log(`Edit company ${companyId}`);
+
   });
 
   const handleDelete = $((companyId: number) => {

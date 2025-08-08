@@ -189,8 +189,7 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
         // Send an empty array to clear all pricing rules for this vehicle
         const body: VehiclePricingRuleDto[] = [];
 
-        console.log('Sending request to clear all pricing rules:', url);
-        console.log('Request body:', JSON.stringify(body, null, 2));
+
 
         const res = await fetchWithAuth(url, {
           method: 'POST',
@@ -202,7 +201,7 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
 
         if (res.ok) {
           const resultData = await res.json();
-          console.log('Success! All pricing rules cleared:', resultData);
+
           toastState.visible = true;
           setTimeout(() => {
             toastState.visible = false;
@@ -280,8 +279,7 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
         expiryDate: formatDateTime(rule.expiryDate),
       }));
 
-      console.log('Sending request to:', url);
-      console.log('Request body:', JSON.stringify(body, null, 2));
+
 
       const res = await fetchWithAuth(url, {
         method: 'POST',
@@ -293,7 +291,7 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
 
       if (res.ok) {
         const resultData = await res.json();
-        console.log('Success! Pricing rules processed:', resultData);
+
         toastState.visible = true;
         setTimeout(() => {
           toastState.visible = false;

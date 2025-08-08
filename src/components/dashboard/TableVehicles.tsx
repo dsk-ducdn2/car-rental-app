@@ -79,7 +79,7 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
   const handleEdit = $(async (vehicleId: string) => {
     // Edit logic here
     window.location.href = `/edit-vehicle/${vehicleId}`;
-    console.log(`Edit vehicle ${vehicleId}`);
+
   });
 
   const handleDelete = $((vehicleId: string) => {

@@ -8,19 +8,46 @@ interface VehicleStatusLog {
   newStatus: string;
   changedBy: string;
   changedAt: string;
-  // Navigation properties (if included by API)
-  vehicle?: {
+  vehicle: {
     id: string;
+    companyId: string;
     licensePlate: string;
     brand: string;
-    company?: {
+    yearManufacture: number;
+    status: string;
+    mileage: number;
+    purchaseDate: string;
+    createdAt: string;
+    updatedAt: string;
+    company: {
+      id: string;
       name: string;
+      address: string;
+      phone: string;
+      email: string;
+      createdAt: string;
+      updatedAt: string;
+      users: any[];
+      vehicles: any[];
     };
+    vehiclePricingRules: any[];
+    vehicleStatusLogs: any[];
   };
-  changedByUser?: {
+  user: {
     id: string;
-    name: string;
     email: string;
+    passwordHash: string;
+    name: string;
+    phone: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+    roleId: number;
+    role: any;
+    companyId: string;
+    company: any;
+    refreshTokens: any[];
+    vehicleStatusLogs: any[];
   };
 }
 
@@ -53,14 +80,12 @@ export default component$<VehicleStatusLogsProps>(({ vehicleId }) => {
       if (vehicleId) {
         params.append('vehicleId', vehicleId);
       }
-      if (searchTerm.value) {
-        params.append('search', searchTerm.value);
-      }
+      // Note: Search is handled client-side for vehicle name and license plate
       if (selectedVehicle.value) {
         params.append('vehicleId', selectedVehicle.value);
       }
       if (selectedStatus.value) {
-        params.append('status', selectedStatus.value);
+        params.append('newStatus', selectedStatus.value);
       }
       
       if (params.toString()) {
@@ -70,9 +95,27 @@ export default component$<VehicleStatusLogsProps>(({ vehicleId }) => {
       const res = await fetchWithAuth(url);
       if (res.ok) {
         const data = await res.json();
-        statusLogs.value = Array.isArray(data) ? data : [];
+        let filteredData = Array.isArray(data) ? data : [];
+        
+        // Client-side filtering by search term (vehicle name/brand or license plate)
+        if (searchTerm.value && filteredData.length > 0) {
+          const searchLower = searchTerm.value.toLowerCase();
+          filteredData = filteredData.filter((log: VehicleStatusLog) => 
+            log.vehicle.brand?.toLowerCase().includes(searchLower) ||
+            log.vehicle.licensePlate?.toLowerCase().includes(searchLower)
+          );
+        }
+        
+        // Client-side filtering by new status if needed
+        if (selectedStatus.value && filteredData.length > 0) {
+          filteredData = filteredData.filter((log: VehicleStatusLog) => 
+            log.newStatus?.toUpperCase() === selectedStatus.value.toUpperCase()
+          );
+        }
+        
+        statusLogs.value = filteredData;
       } else {
-        console.error('Failed to fetch status logs');
+        console.error('Failed to fetch status logs:', res.status, res.statusText);
         statusLogs.value = [];
       }
     } catch (error) {
@@ -90,6 +133,13 @@ export default component$<VehicleStatusLogsProps>(({ vehicleId }) => {
   });
 
   const handleSearch = $(async () => {
+    currentPage.value = 1;
+    await fetchStatusLogs();
+  });
+
+  // Real-time search as user types
+  const handleSearchInput = $(async (value: string) => {
+    searchTerm.value = value;
     currentPage.value = 1;
     await fetchStatusLogs();
   });
@@ -140,7 +190,7 @@ export default component$<VehicleStatusLogsProps>(({ vehicleId }) => {
   const paginatedLogs = statusLogs.value?.slice(startIndex, endIndex) || [];
 
   return (
-    <div class="relative w-full h-full">
+    <div class="relative w-full h-full -ml-16">
       {/* Success/Error Notification */}
       {showNotification.value && (
         <div
@@ -167,7 +217,7 @@ export default component$<VehicleStatusLogsProps>(({ vehicleId }) => {
       )}
 
       {/* Header */}
-      <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+      <div class="bg-white rounded-lg shadow-sm p-6 mb-6 -ml-16 mr-8">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
           <div class="mb-4 sm:mb-0">
             <h2 class="text-2xl font-bold text-gray-900">Vehicle Status History</h2>
@@ -189,23 +239,26 @@ export default component$<VehicleStatusLogsProps>(({ vehicleId }) => {
           <div>
             <input
               type="text"
-              placeholder="Search license plate, brand..."
+              placeholder="Search vehicle name, license plate..."
               value={searchTerm.value}
-              onInput$={(e) => (searchTerm.value = (e.target as HTMLInputElement).value)}
+              onInput$={(e) => handleSearchInput((e.target as HTMLInputElement).value)}
               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
           <div>
             <select
               value={selectedStatus.value}
-              onChange$={(e) => (selectedStatus.value = (e.target as HTMLSelectElement).value)}
+              onChange$={(e) => {
+                selectedStatus.value = (e.target as HTMLSelectElement).value;
+                handleSearch();
+              }}
               class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
               <option value="">All Status Changes</option>
-              <option value="AVAILABLE">Available</option>
-              <option value="RENTED">Rented</option>
-              <option value="MAINTENANCE">Maintenance</option>
-              <option value="OUT_OF_SERVICE">Out of Service</option>
+              <option value="AVAILABLE">Changed to Available</option>
+              <option value="RENTED">Changed to Rented</option>
+              <option value="MAINTENANCE">Changed to Maintenance</option>
+              <option value="OUT_OF_SERVICE">Changed to Out of Service</option>
             </select>
           </div>
           <div>
@@ -228,7 +281,7 @@ export default component$<VehicleStatusLogsProps>(({ vehicleId }) => {
       </div>
 
       {/* Status Logs Table */}
-      <div class="bg-white rounded-lg shadow-sm">
+      <div class="bg-white rounded-lg shadow-sm -ml-16 mr-8">
         {loading.value ? (
           <div class="p-6">
             <div class="space-y-4">
@@ -252,14 +305,14 @@ export default component$<VehicleStatusLogsProps>(({ vehicleId }) => {
               <table class="min-w-full bg-white rounded-lg table-fixed">
                 <thead>
                   <tr class="text-left text-xs text-gray-500 uppercase border-b border-gray-200">
-                    <th class="py-3 px-6 w-1/8">Vehicle</th>
+                    <th class="py-3 px-6 w-1/8">Vehicle Name</th>
                     <th class="py-3 px-6 w-1/8">License Plate</th>
-                    <th class="py-3 px-6 w-1/8">From Status</th>
-                    <th class="py-3 px-6 w-1/8">To Status</th>
+                    <th class="py-3 px-6 w-1/8">Old Status</th>
+                    <th class="py-3 px-6 w-1/8">New Status</th>
                     <th class="py-3 px-6 w-1/8">Changed By</th>
                     <th class="py-3 px-6 w-1/8">Changed At</th>
                     <th class="py-3 px-6 w-1/8">Company</th>
-                    <th class="py-3 px-6 w-1/8">ID</th>
+                    <th class="py-3 px-6 w-1/8">Log ID</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -267,32 +320,33 @@ export default component$<VehicleStatusLogsProps>(({ vehicleId }) => {
                     paginatedLogs.map((log: VehicleStatusLog, idx: number) => (
                       <tr key={idx} class="border-b border-gray-200 hover:bg-gray-50">
                         <td class="py-4 px-6">
-                          <div class="text-sm font-medium text-gray-900">{log.vehicle?.brand || 'N/A'}</div>
+                          <div class="text-sm font-medium text-gray-900">{log.vehicle.brand}</div>
+                          <div class="text-xs text-gray-500">Year: {log.vehicle.yearManufacture}</div>
                         </td>
                         <td class="py-4 px-6">
-                          <div class="text-sm text-gray-700 font-mono">{log.vehicle?.licensePlate || 'N/A'}</div>
+                          <div class="text-sm text-gray-700 font-mono">{log.vehicle.licensePlate}</div>
                         </td>
                         <td class="py-4 px-6">
-                          <span class={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(log.oldStatus || '')}`}>
-                            {log.oldStatus || 'Unknown'}
+                          <span class={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(log.oldStatus)}`}>
+                            {log.oldStatus}
                           </span>
                         </td>
                         <td class="py-4 px-6">
-                          <span class={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(log.newStatus || '')}`}>
+                          <span class={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(log.newStatus)}`}>
                             {log.newStatus}
                           </span>
                         </td>
                         <td class="py-4 px-6">
                           <div class="text-sm text-gray-700">
-                            <div class="font-medium">{log.changedByUser?.name || 'System'}</div>
-                            <div class="text-xs text-gray-500">{log.changedByUser?.email || log.changedBy}</div>
+                            <div class="font-medium">{log.user.name}</div>
+                            <div class="text-xs text-gray-500">{log.user.email}</div>
                           </div>
                         </td>
                         <td class="py-4 px-6">
                           <div class="text-sm text-gray-700">{formatDateTime(log.changedAt)}</div>
                         </td>
                         <td class="py-4 px-6">
-                          <div class="text-sm text-gray-700">{log.vehicle?.company?.name || 'N/A'}</div>
+                          <div class="text-sm text-gray-700">{log.vehicle.company.name}</div>
                         </td>
                         <td class="py-4 px-6">
                           <div class="text-xs text-gray-500 font-mono">#{log.id}</div>
