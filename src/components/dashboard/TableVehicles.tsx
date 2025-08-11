@@ -46,6 +46,8 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
   const showPricingDialog = useSignal(false);
   const pricingVehicleId = useSignal<string | null>(null);
 
+  // Removed maintenance modal state; using navigation instead
+
   // Add search functionality
   const searchTerm = useSignal('');
 
@@ -97,6 +99,13 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
     pricingVehicleId.value = null;
   });
 
+  const handleMaintenance = $((vehicleId: string, vehicleName: string) => {
+    // Redirect to full page create maintenance instead of opening modal
+    window.location.href = `/create-maintenance/${vehicleId}`;
+  });
+
+  // Removed closeMaintenanceDialog; no modal used
+
   const handlePricingSuccess = $(() => {
     notificationMessage.value = 'Pricing updated successfully';
     notificationType.value = 'success';
@@ -105,6 +114,8 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
       showNotification.value = false;
     }, 3000);
   });
+
+  // Removed handleMaintenanceSuccess; success handled on target page
 
   const cancelDelete = $(() => {
     showDeleteDialog.value = false;
@@ -268,6 +279,8 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
           onSuccess={handlePricingSuccess}
         />
       )}
+
+      {/* Removed Maintenance Schedule Modal - navigation is used instead */}
       
       {/* Search, Create Vehicle and Status History Section */}
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4 px-6">
@@ -392,16 +405,27 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
                     </button>
                   </td>
                   <td class="py-4 px-6">
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-1">
                       <button 
                         onClick$={() => handleEdit(vehicle.id)}
-                        class="text-blue-600 font-semibold hover:underline text-sm px-2 py-1 rounded hover:bg-blue-50"
+                        class="text-blue-600 hover:text-blue-800 text-xs font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                        title="Edit vehicle"
                       >
                         Edit
                       </button>
+                      <span class="text-gray-300">|</span>
+                      <button 
+                        onClick$={() => handleMaintenance(vehicle.id, `${vehicle.brand} ${vehicle.licensePlate}`)}
+                        class="text-green-600 hover:text-green-800 text-xs font-medium px-2 py-1 rounded hover:bg-green-50 transition-colors"
+                        title="Create maintenance schedule"
+                      >
+                        Maintenance
+                      </button>
+                      <span class="text-gray-300">|</span>
                       <button 
                         onClick$={() => handleDelete(vehicle.id)}
-                        class="text-red-600 font-semibold hover:underline text-sm px-2 py-1 rounded hover:bg-red-50"
+                        class="text-red-600 hover:text-red-800 text-xs font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                        title="Delete vehicle"
                       >
                         Delete
                       </button>

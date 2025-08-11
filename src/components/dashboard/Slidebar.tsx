@@ -15,6 +15,9 @@ const menu = [
   { label: 'Vehicles', icon: (
     <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M5 12h14M5 12l2-6h10l2 6M5 12l1 4h2l1-4m8 0l1 4h2l1-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="9" cy="16" r="1" fill="currentColor"/><circle cx="15" cy="16" r="1" fill="currentColor"/></svg>
   ), href: '/vehicles' },
+  { label: 'Maintenance Schedules', icon: (
+    <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" fill="currentColor"/><path d="M8 2v2M16 2v2M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  ), href: '/maintenance-schedules' },
   { label: 'Billing', icon: (
     <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2" fill="currentColor"/><rect x="7" y="3" width="10" height="4" rx="1" fill="currentColor"/></svg>
   ), href: '/billing' },
@@ -62,6 +65,9 @@ export const Sidebar = component$(() => {
       currentPath.startsWith('/edit-vehicle') ||
       currentPath.startsWith('/vehicle-status-logs')
     )) return true;
+    
+    // Maintenance Schedules routes
+    if (item.href === '/maintenance-schedules' && currentPath.startsWith('/maintenance-schedules')) return true;
     
     // User-related routes
     if (item.href === '/users' && (

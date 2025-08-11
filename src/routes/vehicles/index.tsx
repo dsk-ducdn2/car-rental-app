@@ -129,9 +129,12 @@ export default component$(() => {
                             <div class="h-6 w-16 bg-gray-200 rounded animate-pulse"></div>
                           </td>
                           <td class="py-4 px-6">
-                            <div class="flex gap-2">
+                            <div class="flex gap-1">
+                              <div class="h-6 w-8 bg-gray-200 rounded animate-pulse"></div>
+                              <div class="h-4 w-1 bg-gray-200 rounded animate-pulse"></div>
+                              <div class="h-6 w-16 bg-gray-200 rounded animate-pulse"></div>
+                              <div class="h-4 w-1 bg-gray-200 rounded animate-pulse"></div>
                               <div class="h-6 w-12 bg-gray-200 rounded animate-pulse"></div>
-                              <div class="h-6 w-14 bg-gray-200 rounded animate-pulse"></div>
                             </div>
                           </td>
                         </tr>
