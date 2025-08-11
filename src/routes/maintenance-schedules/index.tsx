@@ -21,20 +21,40 @@ interface MaintenanceSchedule {
   };
 }
 
+// Normalize various status formats from API to UI-friendly values
+const normalizeStatus = (raw: unknown): string => {
+  const mapByCode: Record<string, string> = {
+    '0': 'scheduled',
+    '1': 'scheduled',
+    '2': 'in_progress',
+    '3': 'completed',
+    '4': 'cancelled',
+  };
+  if (raw === null || raw === undefined) return 'scheduled';
+  const str = String(raw).trim();
+  if (mapByCode[str] !== undefined) return mapByCode[str];
+  return str.toLowerCase().replace(/\s+/g, '_');
+};
+
 const transformMaintenanceData = (schedules: any[]) => {
   if (!Array.isArray(schedules)) return [];
-  return schedules.map((schedule, index) => ({
-    id: schedule.id || `schedule-${index}`,
-    vehicleId: schedule.vehicleId || '',
-    vehicleName: schedule.vehicle?.brand + ' ' + schedule.vehicle?.licensePlate || schedule.vehicleName || 'N/A',
-    title: schedule.title || 'N/A',
-    description: schedule.description || 'N/A',
-    scheduledDate: schedule.scheduledDate ? schedule.scheduledDate.split('T')[0] : 'N/A',
-    status: schedule.status || 'SCHEDULED',
-    createdAt: schedule.createdAt,
-    updatedAt: schedule.updatedAt,
-    vehicle: schedule.vehicle,
-  }));
+  return schedules.map((schedule, index) => {
+    const vehicle = schedule.vehicle || {};
+    const brand = vehicle.brand || schedule.brand || '';
+    const license = vehicle.licensePlate || schedule.licensePlate || '';
+    return {
+      id: schedule.id || `schedule-${index}`,
+      vehicleId: schedule.vehicleId || vehicle.id || '',
+      vehicleName: `${brand} ${license}`.trim() || schedule.vehicleName || 'N/A',
+      title: schedule.title || 'N/A',
+      description: schedule.description || 'N/A',
+      scheduledDate: schedule.scheduledDate ? String(schedule.scheduledDate).split('T')[0] : 'N/A',
+      status: normalizeStatus(schedule.status || 'scheduled'),
+      createdAt: schedule.createdAt,
+      updatedAt: schedule.updatedAt,
+      vehicle: vehicle,
+    } as MaintenanceSchedule;
+  });
 };
 
 export default component$(() => {
@@ -86,7 +106,7 @@ export default component$(() => {
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async () => {
     try {
-      const res = await fetchWithAuth(`${API_URL}/MaintenanceSchedules`);
+      const res = await fetchWithAuth(`${API_URL}/Maintenance`);
       const data = await res.json();
       store.schedules = transformMaintenanceData(data);
     } catch (error) {
@@ -147,10 +167,9 @@ export default component$(() => {
           <div class="bg-white rounded shadow p-6 min-h-[600px]">
             {store.loading ? (
               <div class="space-y-4">
-                {/* Search and Filter Section Skeleton */}
+                {/* Search and Filter Section Skeleton (no create button) */}
                 <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4 px-6">
-                  <div class="h-10 w-32 bg-gray-200 rounded-lg animate-pulse"></div>
-                  <div class="flex-1 max-w-md mx-4">
+                  <div class="flex-1 max-w-md">
                     <div class="h-10 bg-gray-200 rounded-lg animate-pulse"></div>
                   </div>
                   <div class="h-10 w-40 bg-gray-200 rounded-lg animate-pulse"></div>
@@ -192,21 +211,10 @@ export default component$(() => {
               </div>
             ) : (
               <div class="relative w-full h-full">
-                {/* Search and Filter Section */}
+                {/* Search and Filter Section (search aligned left, removed create button) */}
                 <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4 px-6">
-                  {/* Create Schedule Button */}
-                  <button
-                    onClick$={() => (window.location.href = '/vehicles')}
-                    class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg shadow transition duration-150"
-                  >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                    </svg>
-                    Create Schedule
-                  </button>
-
-                  {/* Search Input */}
-                  <div class="flex-1 max-w-md mx-4">
+                  {/* Search Input - aligned to the left */}
+                  <div class="flex-1 max-w-md">
                     <div class="relative">
                       <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
