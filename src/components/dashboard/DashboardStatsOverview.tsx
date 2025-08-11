@@ -1,7 +1,13 @@
-import { component$, useVisibleTask$, useSignal } from '@builder.io/qwik';
+import { component$, useVisibleTask$, useSignal, useStore } from '@builder.io/qwik';
+import { fetchWithAuth } from '../../utils/api';
 
 export const DashboardStatsOverview = component$(() => {
   const chartLoaded = useSignal(false);
+
+  // Stats counts
+  const counts = useStore({ users: 0, companies: 0, vehicles: 0, bookings: 0 });
+  const countsLoading = useSignal(true);
+  const countsError = useSignal<string | null>(null);
 
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(() => {
@@ -51,14 +57,81 @@ export const DashboardStatsOverview = component$(() => {
     });
   });
 
+  // eslint-disable-next-line qwik/no-use-visible-task
+  useVisibleTask$(async () => {
+    const API_URL = import.meta.env.VITE_API_URL;
+
+    const toCount = async (res: Response | undefined) => {
+      if (!res) return 0;
+      if (!res.ok) return 0;
+      const data = await res.json().catch(() => []);
+      if (Array.isArray(data)) return data.length;
+      if (Array.isArray((data as any)?.items)) return (data as any).items.length;
+      if (typeof (data as any)?.total === 'number') return (data as any).total as number;
+      return 0;
+    };
+
+    try {
+      countsLoading.value = true;
+      countsError.value = null;
+
+      const [usersRes, companiesRes, vehiclesRes] = await Promise.all([
+        fetchWithAuth(`${API_URL}/Users`).catch(() => undefined as unknown as Response),
+        fetchWithAuth(`${API_URL}/Companies`).catch(() => undefined as unknown as Response),
+        fetchWithAuth(`${API_URL}/Vehicles`).catch(() => undefined as unknown as Response),
+      ]);
+
+      // Bookings: try plural then singular, then fallback to mock data if available
+      let bookingsRes: Response | undefined = undefined;
+      try {
+        bookingsRes = await fetchWithAuth(`${API_URL}/Bookings`);
+        if (!bookingsRes.ok) throw new Error('Bookings not ok');
+      } catch (_) {
+        try {
+          const alt = await fetchWithAuth(`${API_URL}/Booking`);
+          bookingsRes = alt.ok ? alt : undefined;
+        } catch {
+          try {
+            // Optional fallback to local mock for dev
+            const mock = await fetch('/mock-data/bookings.json');
+            bookingsRes = mock.ok ? mock : undefined;
+          } catch {
+            bookingsRes = undefined;
+          }
+        }
+      }
+
+      const [usersCount, companiesCount, vehiclesCount, bookingsCount] = await Promise.all([
+        toCount(usersRes),
+        toCount(companiesRes),
+        toCount(vehiclesRes),
+        toCount(bookingsRes),
+      ]);
+
+      counts.users = usersCount;
+      counts.companies = companiesCount;
+      counts.vehicles = vehiclesCount;
+      counts.bookings = bookingsCount;
+    } catch (err) {
+      console.error('Failed to load counts', err);
+      countsError.value = 'Failed to load overview stats';
+    } finally {
+      countsLoading.value = false;
+    }
+  });
+
   return (
     <div class="flex flex-col md:flex-row gap-2 md:gap-6 mt-8">
       {/* Card trái */}
       <div class="bg-white rounded-2xl shadow p-4 md:p-8 flex-1 min-w-full md:min-w-[400px] min-h-[280px] flex flex-col justify-between mb-2 md:mb-0">
         <div>
-          <div class="text-lg font-bold mb-2">Active Users</div>
+          <div class="text-lg font-bold mb-2">System Overview</div>
           <div class="text-blue-600 font-semibold text-sm mb-6 h-[20px]">
-            (+23%) <span class="text-gray-400 font-normal">THAN LAST WEEK</span>
+            {countsError.value ? (
+              <span class="text-red-500">{countsError.value}</span>
+            ) : (
+              <span class="text-gray-400 font-normal">Realtime counts</span>
+            )}
           </div>
         </div>
         <div class="flex flex-col sm:flex-row gap-4 md:gap-8 items-end min-h-[120px]">
@@ -66,48 +139,71 @@ export const DashboardStatsOverview = component$(() => {
           <div class="min-w-[80px]">
             <div class="flex items-center gap-2 mb-1 h-[26px]">
               <span class="bg-pink-500 rounded p-1 w-[26px] h-[26px] flex items-center justify-center">
-                {/* User icon */}
                 <svg width="18" height="18" fill="white" viewBox="0 0 24 24"><path d="M12 12c2.7 0 8 1.34 8 4v2H4v-2c0-2.66 5.3-4 8-4zm0-2a4 4 0 100-8 4 4 0 000 8z"/></svg>
               </span>
               <span class="text-xs text-gray-500">Users</span>
             </div>
-            <div class="text-2xl font-bold h-[32px] flex items-center">36K</div>
+            <div class="text-2xl font-bold h-[32px] flex items-center">
+              {countsLoading.value ? (
+                <span class="inline-block h-6 w-12 bg-gray-200 rounded animate-pulse"></span>
+              ) : (
+                counts.users.toLocaleString()
+              )}
+            </div>
             <div class="h-1 bg-cyan-400 rounded mt-1 w-16"></div>
           </div>
-          {/* Clicks */}
+
+          {/* Companies */}
           <div class="min-w-[80px]">
             <div class="flex items-center gap-2 mb-1 h-[26px]">
               <span class="bg-blue-500 rounded p-1 w-[26px] h-[26px] flex items-center justify-center">
-                {/* Clicks icon */}
-                <svg width="18" height="18" fill="white" viewBox="0 0 24 24"><path d="M9 17H7v-2h2v2zm0-4H7v-6h2v6zm4 4h-2v-2h2v2zm0-4h-2v-6h2v6zm4 4h-2v-2h2v2zm0-4h-2v-6h2v6z"/></svg>
+                <svg width="18" height="18" fill="white" viewBox="0 0 24 24"><path d="M3 13h18v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6zm0-2V5a2 2 0 012-2h4v8H3zm10-8h4a2 2 0 012 2v8h-6V3z"/></svg>
               </span>
-              <span class="text-xs text-gray-500">Clicks</span>
+              <span class="text-xs text-gray-500">Companies</span>
             </div>
-            <div class="text-2xl font-bold h-[32px] flex items-center">2M</div>
+            <div class="text-2xl font-bold h-[32px] flex items-center">
+              {countsLoading.value ? (
+                <span class="inline-block h-6 w-12 bg-gray-200 rounded animate-pulse"></span>
+              ) : (
+                counts.companies.toLocaleString()
+              )}
+            </div>
             <div class="h-1 bg-cyan-400 rounded mt-1 w-16"></div>
           </div>
-          {/* Sales */}
+
+          {/* Vehicles */}
           <div class="min-w-[80px]">
             <div class="flex items-center gap-2 mb-1 h-[26px]">
               <span class="bg-orange-400 rounded p-1 w-[26px] h-[26px] flex items-center justify-center">
-                {/* Sales icon */}
-                <svg width="18" height="18" fill="white" viewBox="0 0 24 24"><path d="M21 7l-1 2H4L3 7h18zm-2.38 4l-1.24 6.45A2 2 0 0115.42 19H8.58a2 2 0 01-1.96-1.55L5.38 11h13.24z"/></svg>
+                <svg width="18" height="18" fill="white" viewBox="0 0 24 24"><path d="M5 16l1.5-4.5A2 2 0 018.4 10h7.2a2 2 0 011.9 1.5L19 16m-9 0h4m-8 0a2 2 0 104 0 2 2 0 10-4 0zm8 0a2 2 0 104 0 2 2 0 10-4 0zM5 13h14"/></svg>
               </span>
-              <span class="text-xs text-gray-500">Sales</span>
+              <span class="text-xs text-gray-500">Vehicles</span>
             </div>
-            <div class="text-2xl font-bold h-[32px] flex items-center">$435</div>
+            <div class="text-2xl font-bold h-[32px] flex items-center">
+              {countsLoading.value ? (
+                <span class="inline-block h-6 w-12 bg-gray-200 rounded animate-pulse"></span>
+              ) : (
+                counts.vehicles.toLocaleString()
+              )}
+            </div>
             <div class="h-1 bg-cyan-400 rounded mt-1 w-16"></div>
           </div>
-          {/* Items */}
+
+          {/* Bookings */}
           <div class="min-w-[80px]">
             <div class="flex items-center gap-2 mb-1 h-[26px]">
               <span class="bg-pink-500 rounded p-1 w-[26px] h-[26px] flex items-center justify-center">
-                {/* Items icon */}
-                <svg width="18" height="18" fill="white" viewBox="0 0 24 24"><path d="M20 6H4V4h16v2zm0 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V8h16zm-2 2H6v10h12V10z"/></svg>
+                <svg width="18" height="18" fill="white" viewBox="0 0 24 24"><path d="M7 3h10a2 2 0 012 2v14l-7-3-7 3V5a2 2 0 012-2z"/></svg>
               </span>
-              <span class="text-xs text-gray-500">Items</span>
+              <span class="text-xs text-gray-500">Bookings</span>
             </div>
-            <div class="text-2xl font-bold h-[32px] flex items-center">43</div>
+            <div class="text-2xl font-bold h-[32px] flex items-center">
+              {countsLoading.value ? (
+                <span class="inline-block h-6 w-12 bg-gray-200 rounded animate-pulse"></span>
+              ) : (
+                counts.bookings.toLocaleString()
+              )}
+            </div>
             <div class="h-1 bg-cyan-400 rounded mt-1 w-16"></div>
           </div>
         </div>

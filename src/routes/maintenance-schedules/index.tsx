@@ -78,6 +78,13 @@ export default component$(() => {
   
   const API_URL = import.meta.env.VITE_API_URL;
 
+  // Notification and delete dialog state
+  const showNotification = useSignal(false);
+  const notificationMessage = useSignal('');
+  const notificationType = useSignal<'success' | 'error'>('success');
+  const showDeleteDialog = useSignal(false);
+  const deletingScheduleId = useSignal<string | null>(null);
+
   // Filter schedules based on search term and status
   const filteredSchedules = useComputed$(() => {
     let filtered = store.schedules;
@@ -172,6 +179,49 @@ export default component$(() => {
     });
   };
 
+  const openDelete = $((scheduleId: string) => {
+    deletingScheduleId.value = scheduleId;
+    showDeleteDialog.value = true;
+  });
+
+  const cancelDelete = $(() => {
+    showDeleteDialog.value = false;
+    deletingScheduleId.value = null;
+  });
+
+  const confirmDelete = $(async () => {
+    if (!deletingScheduleId.value) return;
+    try {
+      const endpoint = `${API_URL}/Maintenance/${deletingScheduleId.value}`;
+      const response = await fetchWithAuth(endpoint, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (response.ok) {
+        const idx = store.schedules.findIndex(s => s.id === deletingScheduleId.value);
+        if (idx !== -1) {
+          store.schedules.splice(idx, 1);
+        }
+        notificationMessage.value = 'Schedule deleted successfully';
+        notificationType.value = 'success';
+      } else {
+        notificationMessage.value = 'Failed to delete schedule';
+        notificationType.value = 'error';
+      }
+    } catch (err) {
+      console.error('Error deleting maintenance schedule:', err);
+      notificationMessage.value = 'An error occurred while deleting schedule';
+      notificationType.value = 'error';
+    } finally {
+      showNotification.value = true;
+      setTimeout(() => {
+        showNotification.value = false;
+      }, 3000);
+      showDeleteDialog.value = false;
+      deletingScheduleId.value = null;
+    }
+  });
+
   return (
     <div class="flex flex-col md:flex-row min-h-screen bg-[#f8f9fa]">
       {/* Sidebar: hidden on mobile, show on md and up */}
@@ -200,6 +250,7 @@ export default component$(() => {
                         <th class="py-3 px-6">Scheduled Date</th>
                         <th class="py-3 px-6">Status</th>
                         <th class="py-3 px-6">Description</th>
+                        <th class="py-3 px-6">Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -220,6 +271,9 @@ export default component$(() => {
                           <td class="py-4 px-6">
                             <div class="h-4 bg-gray-200 rounded animate-pulse"></div>
                           </td>
+                          <td class="py-4 px-6">
+                            <div class="h-6 w-12 bg-gray-200 rounded animate-pulse"></div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -228,6 +282,40 @@ export default component$(() => {
               </div>
             ) : (
               <div class="relative w-full h-full">
+                {/* Notifications */}
+                {showNotification.value && (
+                  <div 
+                    class={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-white ${notificationType.value === 'success' ? 'bg-green-500' : 'bg-red-500'}`}
+                  >
+                    <div class="flex items-center justify-between gap-6">
+                      <span>{notificationMessage.value}</span>
+                      <button onClick$={() => (showNotification.value = false)} class="text-white/90 hover:text-white">✕</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Delete confirmation dialog */}
+                {showDeleteDialog.value && (
+                  <div class="fixed inset-0 flex items-center justify-center z-50" style="background-color: rgba(0, 0, 0, 0.3); backdrop-filter: blur(2px);">
+                    <div class="bg-white rounded-lg p-6 max-w-sm w-full mx-4 relative shadow-2xl">
+                      <button onClick$={cancelDelete} class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">✕</button>
+                      <div class="flex justify-center mb-4">
+                        <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                          <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                          </svg>
+                        </div>
+                      </div>
+                      <h3 class="text-lg font-semibold text-center mb-2">Delete Schedule</h3>
+                      <p class="text-gray-600 text-center mb-6">Are you sure you want to delete this maintenance schedule?</p>
+                      <div class="flex gap-3 justify-center">
+                        <button onClick$={cancelDelete} class="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
+                        <button onClick$={confirmDelete} class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">Delete</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Search + Date Range Filter */}
                 <div class="flex flex-col lg:flex-row lg:items-center gap-4 mb-4 px-6">
                   <div class="flex-1 max-w-md">
@@ -311,6 +399,7 @@ export default component$(() => {
                         <th class="py-3 px-6">Scheduled Date</th>
                         <th class="py-3 px-6">Status</th>
                         <th class="py-3 px-6">Description</th>
+                        <th class="py-3 px-6">Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -339,11 +428,19 @@ export default component$(() => {
                                 {schedule.description}
                               </div>
                             </td>
+                            <td class="py-4 px-6">
+                              <button
+                                onClick$={() => openDelete(schedule.id)}
+                                class="text-red-600 font-semibold hover:underline text-sm px-2 py-1 rounded hover:bg-red-50"
+                              >
+                                Delete
+                              </button>
+                            </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={5} class="text-center py-6 text-gray-400">No maintenance schedules available.</td>
+                          <td colSpan={6} class="text-center py-6 text-gray-400">No maintenance schedules available.</td>
                         </tr>
                       )}
                     </tbody>
