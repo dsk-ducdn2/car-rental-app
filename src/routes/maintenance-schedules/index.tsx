@@ -22,11 +22,13 @@ interface MaintenanceSchedule {
 }
 
 // Normalize API status
-// 1 -> SCHEDULED, 2 -> REMINDER_SENT, 3 -> IN_PROGRESS, 4 -> FINISHED
+// Only 3 statuses are used now:
+// 1 -> SCHEDULED, 3 -> IN_PROGRESS, 4 -> FINISHED
+// Any legacy value (including 2 or 'REMINDER_SENT') will be coerced to SCHEDULED
 const normalizeStatus = (raw: unknown): string => {
   const mapByCode: Record<string, string> = {
     '1': 'SCHEDULED',
-    '2': 'REMINDER_SENT',
+    '2': 'SCHEDULED',
     '3': 'IN_PROGRESS',
     '4': 'FINISHED',
   };
@@ -35,14 +37,8 @@ const normalizeStatus = (raw: unknown): string => {
   if (mapByCode[str] !== undefined) return mapByCode[str];
   // Fallback: coerce any string to uppercase; default to SCHEDULED
   const upper = str.toUpperCase();
-  if (
-    upper === 'REMINDER_SENT' ||
-    upper === 'SCHEDULED' ||
-    upper === 'IN_PROGRESS' ||
-    upper === 'FINISHED'
-  ) {
-    return upper;
-  }
+  if (upper === 'REMINDER_SENT') return 'SCHEDULED';
+  if (upper === 'SCHEDULED' || upper === 'IN_PROGRESS' || upper === 'FINISHED') return upper;
   return 'SCHEDULED';
 };
 
@@ -157,8 +153,6 @@ export default component$(() => {
     switch (status.toUpperCase()) {
       case 'SCHEDULED':
         return 'bg-blue-100 text-blue-700';
-      case 'REMINDER_SENT':
-        return 'bg-yellow-100 text-yellow-700';
       case 'IN_PROGRESS':
         return 'bg-purple-100 text-purple-700';
       case 'FINISHED':
