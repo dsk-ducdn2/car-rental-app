@@ -21,19 +21,29 @@ interface MaintenanceSchedule {
   };
 }
 
-// Normalize various status formats from API to UI-friendly values
+// Normalize API status
+// 1 -> SCHEDULED, 2 -> REMINDER_SENT, 3 -> IN_PROGRESS, 4 -> FINISHED
 const normalizeStatus = (raw: unknown): string => {
   const mapByCode: Record<string, string> = {
-    '0': 'scheduled',
-    '1': 'scheduled',
-    '2': 'in_progress',
-    '3': 'completed',
-    '4': 'cancelled',
+    '1': 'SCHEDULED',
+    '2': 'REMINDER_SENT',
+    '3': 'IN_PROGRESS',
+    '4': 'FINISHED',
   };
-  if (raw === null || raw === undefined) return 'scheduled';
+  if (raw === null || raw === undefined) return 'SCHEDULED';
   const str = String(raw).trim();
   if (mapByCode[str] !== undefined) return mapByCode[str];
-  return str.toLowerCase().replace(/\s+/g, '_');
+  // Fallback: coerce any string to uppercase; default to SCHEDULED
+  const upper = str.toUpperCase();
+  if (
+    upper === 'REMINDER_SENT' ||
+    upper === 'SCHEDULED' ||
+    upper === 'IN_PROGRESS' ||
+    upper === 'FINISHED'
+  ) {
+    return upper;
+  }
+  return 'SCHEDULED';
 };
 
 const transformMaintenanceData = (schedules: any[]) => {
@@ -66,7 +76,9 @@ export default component$(() => {
   const ITEMS_PER_PAGE = 8;
   const currentPage = useSignal(1);
   const searchTerm = useSignal('');
-  const statusFilter = useSignal('all');
+  const startDate = useSignal('');
+  const endDate = useSignal('');
+  // Removed status filter; only search remains
   
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -84,10 +96,22 @@ export default component$(() => {
       );
     }
     
-    if (statusFilter.value !== 'all') {
-      filtered = filtered.filter((schedule) => 
-        schedule.status.toLowerCase() === statusFilter.value.toLowerCase()
-      );
+    if (startDate.value || endDate.value) {
+      let from = startDate.value;
+      let to = endDate.value;
+      if (from && to && from > to) {
+        // swap to keep a valid range
+        const temp = from;
+        from = to;
+        to = temp;
+      }
+      filtered = filtered.filter((schedule) => {
+        const d = schedule.scheduledDate;
+        if (!d || d === 'N/A') return false;
+        if (from && d < from) return false;
+        if (to && d > to) return false;
+        return true;
+      });
     }
     
     return filtered;
@@ -130,15 +154,15 @@ export default component$(() => {
   });
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'scheduled':
+    switch (status.toUpperCase()) {
+      case 'SCHEDULED':
         return 'bg-blue-100 text-blue-700';
-      case 'in_progress':
+      case 'REMINDER_SENT':
         return 'bg-yellow-100 text-yellow-700';
-      case 'completed':
+      case 'IN_PROGRESS':
+        return 'bg-purple-100 text-purple-700';
+      case 'FINISHED':
         return 'bg-green-100 text-green-700';
-      case 'cancelled':
-        return 'bg-red-100 text-red-700';
       default:
         return 'bg-gray-100 text-gray-700';
     }
@@ -167,12 +191,11 @@ export default component$(() => {
           <div class="bg-white rounded shadow p-6 min-h-[600px]">
             {store.loading ? (
               <div class="space-y-4">
-                {/* Search and Filter Section Skeleton (no create button) */}
-                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4 px-6">
+                {/* Search Section Skeleton (only search) */}
+                <div class="flex flex-col lg:flex-row lg:items-center gap-4 mb-4 px-6">
                   <div class="flex-1 max-w-md">
                     <div class="h-10 bg-gray-200 rounded-lg animate-pulse"></div>
                   </div>
-                  <div class="h-10 w-40 bg-gray-200 rounded-lg animate-pulse"></div>
                 </div>
                 <div class="overflow-x-auto">
                   <table class="min-w-full bg-white rounded-lg">
@@ -211,9 +234,8 @@ export default component$(() => {
               </div>
             ) : (
               <div class="relative w-full h-full">
-                {/* Search and Filter Section (search aligned left, removed create button) */}
-                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4 px-6">
-                  {/* Search Input - aligned to the left */}
+                {/* Search + Date Range Filter */}
+                <div class="flex flex-col lg:flex-row lg:items-center gap-4 mb-4 px-6">
                   <div class="flex-1 max-w-md">
                     <div class="relative">
                       <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -233,22 +255,44 @@ export default component$(() => {
                       />
                     </div>
                   </div>
-
-                  {/* Status Filter */}
-                  <select
-                    value={statusFilter.value}
-                    onChange$={(e) => {
-                      statusFilter.value = (e.target as HTMLSelectElement).value;
-                      currentPage.value = 1;
-                    }}
-                    class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="scheduled">Scheduled</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
+                  {/* Date range filters */}
+                  <div class="flex items-center gap-3">
+                    <div>
+                      <input
+                        type="date"
+                        value={startDate.value}
+                        onInput$={(e) => {
+                          startDate.value = (e.target as HTMLInputElement).value;
+                          currentPage.value = 1;
+                        }}
+                        class="w-40 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                      />
+                    </div>
+                    <span class="hidden lg:inline text-gray-400">–</span>
+                    <div>
+                      <input
+                        type="date"
+                        value={endDate.value}
+                        onInput$={(e) => {
+                          endDate.value = (e.target as HTMLInputElement).value;
+                          currentPage.value = 1;
+                        }}
+                        class="w-40 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                      />
+                    </div>
+                    {(startDate.value || endDate.value) && (
+                      <button
+                        onClick$={() => {
+                          startDate.value = '';
+                          endDate.value = '';
+                          currentPage.value = 1;
+                        }}
+                        class="px-3 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Search Results Info */}
@@ -293,7 +337,7 @@ export default component$(() => {
                             </td>
                             <td class="py-4 px-6">
                               <span class={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(schedule.status)}`}>
-                                {schedule.status.replace('_', ' ').toUpperCase()}
+                                {schedule.status}
                               </span>
                             </td>
                             <td class="py-4 px-6">

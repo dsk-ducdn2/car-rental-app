@@ -18,15 +18,10 @@ const menu = [
   { label: 'Maintenance Schedules', icon: (
     <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" fill="currentColor"/><path d="M8 2v2M16 2v2M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
   ), href: '/maintenance-schedules' },
-  { label: 'Billing', icon: (
+  { label: 'Booking', icon: (
     <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2" fill="currentColor"/><rect x="7" y="3" width="10" height="4" rx="1" fill="currentColor"/></svg>
-  ), href: '/billing' },
-  { label: 'Virtual Reality', icon: (
-    <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="5" fill="currentColor"/><circle cx="7" cy="12" r="2" fill="#fff"/><circle cx="17" cy="12" r="2" fill="#fff"/></svg>
-  ) },
-  { label: 'RTL', icon: (
-    <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M7 7h10M7 12h10M7 17h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="3" y="5" width="4" height="14" rx="2" fill="currentColor"/></svg>
-  ) },
+  ), href: '/booking' },
+  
 ];
 
 
