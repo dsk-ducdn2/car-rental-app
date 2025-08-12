@@ -64,6 +64,13 @@ export const Sidebar = component$(() => {
     // Maintenance Schedules routes
     if (item.href === '/maintenance-schedules' && currentPath.startsWith('/maintenance-schedules')) return true;
     
+    // Booking routes
+    if (item.href === '/booking' && (
+      currentPath.startsWith('/booking') ||
+      currentPath.startsWith('/create-booking') ||
+      currentPath.startsWith('/edit-booking')
+    )) return true;
+    
     // User-related routes
     if (item.href === '/users' && (
       currentPath === '/users' || 
