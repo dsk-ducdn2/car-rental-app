@@ -24,7 +24,8 @@ export default component$(() => {
   const saving = useSignal(false);
   const error = useSignal('');
   const success = useSignal('');
-  const maintenanceDates = useStore<string[]>([]); // YYYY-MM-DD dates to highlight
+  const maintenanceDates = useStore<string[]>([]); // YYYY-MM-DD dates to highlight (maintenance)
+  const bookedDates = useStore<string[]>([]); // YYYY-MM-DD dates that are already booked
 
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async () => {
@@ -52,39 +53,62 @@ export default component$(() => {
     }
   });
 
-  // Load maintenance dates for the selected vehicle
+  // Load disabled dates for the selected vehicle (split into maintenance vs booked)
   const loadMaintenanceDates = $(async (vehicleId: string) => {
     maintenanceDates.splice(0, maintenanceDates.length);
+    bookedDates.splice(0, bookedDates.length);
     if (!vehicleId) return;
     try {
-      const res = await fetchWithAuth(`${API_URL}/Maintenance`);
-      if (!res.ok) return;
-      const data = await res.json();
-      if (!Array.isArray(data)) return;
+      const [maintRes, bookedRes] = await Promise.all([
+        fetchWithAuth(`${API_URL}/Maintenance`).catch(() => undefined as unknown as Response),
+        fetchWithAuth(`${API_URL}/Booking/booked-dates/${vehicleId}`).catch(() => undefined as unknown as Response),
+      ]);
 
-      const isMaintainStatus = (raw: unknown): boolean => {
-        if (raw === null || raw === undefined) return false;
-        const s = String(raw).trim().toUpperCase();
-        // Accept both numeric codes and strings
-        return s === '1' || s === '3' || s === 'SCHEDULED' || s === 'IN_PROGRESS';
-      };
+      // Maintenance days
+      if (maintRes && maintRes.ok) {
+        const maintData = await maintRes.json().catch(() => []);
+        if (Array.isArray(maintData)) {
+          const isMaintainStatus = (raw: unknown): boolean => {
+            if (raw === null || raw === undefined) return false;
+            const s = String(raw).trim().toUpperCase();
+            return s === '1' || s === '3' || s === 'SCHEDULED' || s === 'IN_PROGRESS';
+          };
 
-      const dates: string[] = [];
-      for (const m of data) {
-        const vid = m?.vehicleId ?? m?.vehicle?.id;
-        if (String(vid) !== String(vehicleId)) continue;
-        if (!isMaintainStatus(m?.status)) continue;
-        const d = m?.scheduledDate ?? m?.scheduled_date ?? m?.date;
-        if (!d) continue;
-        const dt = new Date(d);
-        if (isNaN(dt.getTime())) continue;
-        const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
-        dates.push(key);
+          for (const m of maintData) {
+            const vid = m?.vehicleId ?? m?.vehicle?.id;
+            if (String(vid) !== String(vehicleId)) continue;
+            if (!isMaintainStatus(m?.status)) continue;
+            const d = m?.scheduledDate ?? m?.scheduled_date ?? m?.date;
+            if (!d) continue;
+            const dt = new Date(d);
+            if (isNaN(dt.getTime())) continue;
+            const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+            maintenanceDates.push(key);
+          }
+        }
       }
-      const unique = Array.from(new Set(dates));
-      maintenanceDates.push(...unique);
+
+      // Booked days (returned as array of YYYY-MM-DD)
+      if (bookedRes && bookedRes.ok) {
+        const bookedData = await bookedRes.json().catch(() => []);
+        if (Array.isArray(bookedData)) {
+          for (const d of bookedData) {
+            if (!d) continue;
+            // Ensure YYYY-MM-DD
+            const dt = new Date(String(d).length > 10 ? d : `${d}T00:00:00`);
+            if (isNaN(dt.getTime())) continue;
+            const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+            bookedDates.push(key);
+          }
+        }
+      }
+      // De-duplicate within each bucket
+      const uniqMaint = Array.from(new Set([...maintenanceDates]));
+      const uniqBooked = Array.from(new Set([...bookedDates]));
+      maintenanceDates.splice(0, maintenanceDates.length, ...uniqMaint);
+      bookedDates.splice(0, bookedDates.length, ...uniqBooked);
     } catch (e) {
-      console.error('Failed to load maintenance dates', e);
+      console.error('Failed to load disabled dates', e);
     }
   });
 
@@ -174,7 +198,8 @@ export default component$(() => {
                     form.startDateTime = start;
                     form.endDateTime = end;
                   })}
-                  markedDates={maintenanceDates}
+                  maintenanceDates={maintenanceDates}
+                  bookedDates={bookedDates}
                   disabled={!form.vehicleId}
                 />
 
@@ -212,10 +237,24 @@ export default component$(() => {
   );
 });
 
+// Pure helper (module scope) to check if a date range intersects any blocked dates
+const intersectsBlocked = (startIso: string, endIso: string, blocked: string[]): boolean => {
+  const toDate = (s: string) => new Date(`${s}T00:00:00`);
+  let d = toDate(startIso);
+  const end = toDate(endIso);
+  const seen = new Set(blocked);
+  while (d <= end) {
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (seen.has(key)) return true;
+    d.setDate(d.getDate() + 1);
+  }
+  return false;
+};
+
 // Inline Date Range Picker (2 months side-by-side)
 interface DateRangePickerProps { onChange$: PropFunction<(start: string, end: string) => void>; disabled?: boolean }
 
-export const DateRangePicker = component$<DateRangePickerProps & { markedDates?: string[] }>(({ onChange$, markedDates = [], disabled = false }) => {
+export const DateRangePicker = component$<DateRangePickerProps & { maintenanceDates?: string[]; bookedDates?: string[] }>(({ onChange$, maintenanceDates = [], bookedDates = [], disabled = false }) => {
   const startMonthOffset = useSignal(0); // relative to today
   const selected = useStore<{ start: string | null; end: string | null }>({ start: null, end: null });
 
@@ -271,17 +310,16 @@ export const DateRangePicker = component$<DateRangePickerProps & { markedDates?:
 
   const onPick = $((iso: string) => {
     // Block picking on maintenance days
-    if (markedDates.includes(iso)) return;
+    if (maintenanceDates.includes(iso) || bookedDates.includes(iso)) return;
     if (!selected.start || (selected.start && selected.end)) {
       selected.start = iso;
       selected.end = null;
     } else if (selected.start && !selected.end) {
-      if (iso < selected.start) {
-        selected.end = selected.start;
-        selected.start = iso;
-      } else {
-        selected.end = iso;
-      }
+      const startIso = iso < selected.start ? iso : selected.start;
+      const endIso = iso < selected.start ? selected.start : iso;
+      if (intersectsBlocked(startIso, endIso, [...maintenanceDates, ...bookedDates])) return; // do not allow ranges that include blocked days
+      selected.start = startIso;
+      selected.end = endIso;
       // emit
       onChange$(selected.start, selected.end);
     }
@@ -304,17 +342,32 @@ export const DateRangePicker = component$<DateRangePickerProps & { markedDates?:
               const isEnd = selected.end === iso;
               const inRange = isInRange(iso);
               const baseClasses = 'w-7 h-7 rounded-full cursor-pointer select-none flex items-center justify-center text-[12px]';
-              const isMaint = markedDates.includes(iso);
+              const isMaint = maintenanceDates.includes(iso);
+              const isBooked = bookedDates.includes(iso);
               const color = isStart || isEnd
                 ? 'bg-red-600 text-white'
                 : inRange
                   ? 'bg-red-100 text-red-700'
                   : inMonth
-                    ? (isMaint ? 'bg-yellow-100 text-yellow-800 ring-1 ring-yellow-300 cursor-not-allowed' : 'bg-transparent hover:bg-white text-gray-800')
+                    ? (
+                        isBooked
+                          ? 'bg-blue-100 text-blue-800 ring-1 ring-blue-300 cursor-not-allowed'
+                          : isMaint
+                            ? 'bg-yellow-100 text-yellow-800 ring-1 ring-yellow-300 cursor-not-allowed'
+                            : 'bg-transparent hover:bg-white text-gray-800'
+                      )
                     : 'bg-transparent text-gray-400';
               const sunday = d.getDay() === 0 && inMonth && !(isStart || isEnd || inRange);
               return (
-                <button key={di} disabled={isMaint} title={isMaint ? 'Scheduled maintenance' : ''} onClick$={() => onPick(iso)} class={`${baseClasses} ${color} ${sunday ? 'text-red-500' : ''}`}>{d.getDate()}</button>
+                <button
+                  key={di}
+                  disabled={isMaint || isBooked}
+                  title={isBooked ? 'Booked' : isMaint ? 'Scheduled maintenance' : ''}
+                  onClick$={() => onPick(iso)}
+                  class={`${baseClasses} ${color} ${sunday ? 'text-red-500' : ''}`}
+                >
+                  {d.getDate()}
+                </button>
               );
             })}
           </div>

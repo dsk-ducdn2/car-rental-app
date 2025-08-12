@@ -14,11 +14,16 @@ interface BookingApiShape {
   userEmail?: string;
   startDateTime?: string;
   start_datetime?: string;
+  startDatetime?: string;
+  startDate?: string;
   endDateTime?: string;
   end_datetime?: string;
+  endDatetime?: string;
+  endDate?: string;
   status?: string;
   totalPrice?: number;
   total_price?: number;
+  price?: number;
 }
 
 interface Booking {
@@ -29,7 +34,6 @@ interface Booking {
   userEmail: string;
   startDateTime: string; // ISO string
   endDateTime: string;   // ISO string
-  status: string;
   totalPrice: number;
 }
 
@@ -39,10 +43,23 @@ const toBooking = (row: BookingApiShape, index: number): Booking => {
   const vehicleName = row.vehicleName || row.vehicle?.name || [row.vehicle?.brand, row.vehicle?.licensePlate].filter(Boolean).join(' ') || 'N/A';
   const userId = row.userId || row.user?.id || '';
   const userEmail = row.userEmail || row.user?.email || row.user?.gmail || 'N/A';
-  const start = row.startDateTime || row.start_datetime || '';
-  const end = row.endDateTime || row.end_datetime || '';
-  const status = (row.status || 'PENDING').toString().toUpperCase();
-  const total = typeof row.totalPrice === 'number' ? row.totalPrice : (typeof row.total_price === 'number' ? row.total_price : 0);
+  const start =
+    row.startDateTime ||
+    row.start_datetime ||
+    row.startDatetime ||
+    row.startDate ||
+    '';
+  const end =
+    row.endDateTime ||
+    row.end_datetime ||
+    row.endDatetime ||
+    row.endDate ||
+    '';
+  const total = typeof row.totalPrice === 'number'
+    ? row.totalPrice
+    : (typeof row.total_price === 'number'
+      ? row.total_price
+      : (typeof row.price === 'number' ? row.price : 0));
   return {
     id: String(id),
     vehicleId: String(vehicleId),
@@ -51,7 +68,6 @@ const toBooking = (row: BookingApiShape, index: number): Booking => {
     userEmail,
     startDateTime: start,
     endDateTime: end,
-    status,
     totalPrice: total,
   };
 };
@@ -82,8 +98,7 @@ export default component$(() => {
       const s = searchTerm.value.toLowerCase().trim();
       filtered = filtered.filter((b) =>
         b.vehicleName.toLowerCase().includes(s) ||
-        b.userEmail.toLowerCase().includes(s) ||
-        b.status.toLowerCase().includes(s)
+        b.userEmail.toLowerCase().includes(s)
       );
     }
     return filtered;
@@ -157,24 +172,14 @@ export default component$(() => {
     }
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status.toUpperCase()) {
-      case 'CONFIRMED':
-        return 'bg-green-100 text-green-700';
-      case 'CANCELLED':
-        return 'bg-red-100 text-red-700';
-      case 'COMPLETED':
-        return 'bg-blue-100 text-blue-700';
-      default:
-        return 'bg-yellow-100 text-yellow-700';
-    }
-  };
+  // Status column removed
 
   const formatDateTime = (iso: string) => {
     if (!iso) return 'N/A';
     const d = new Date(iso);
     if (isNaN(d.getTime())) return iso;
-    return d.toLocaleString();
+    // Only return date (ngày/tháng/năm) in Vietnamese locale
+    return d.toLocaleDateString('vi-VN');
   };
 
   return (
@@ -226,7 +231,6 @@ export default component$(() => {
                         <th class="py-3 px-6">User Gmail</th>
                         <th class="py-3 px-6">Start</th>
                         <th class="py-3 px-6">End</th>
-                        <th class="py-3 px-6">Status</th>
                         <th class="py-3 px-6">Total Price</th>
                         <th class="py-3 px-6">Action</th>
                       </tr>
@@ -238,7 +242,6 @@ export default component$(() => {
                           <td class="py-4 px-6"><div class="h-4 bg-gray-200 rounded animate-pulse"></div></td>
                           <td class="py-4 px-6"><div class="h-4 bg-gray-200 rounded animate-pulse"></div></td>
                           <td class="py-4 px-6"><div class="h-4 bg-gray-200 rounded animate-pulse"></div></td>
-                          <td class="py-4 px-6"><div class="h-6 w-16 bg-gray-200 rounded-full animate-pulse"></div></td>
                           <td class="py-4 px-6"><div class="h-4 bg-gray-200 rounded animate-pulse"></div></td>
                           <td class="py-4 px-6"><div class="h-6 w-28 bg-gray-200 rounded animate-pulse"></div></td>
                         </tr>
@@ -260,7 +263,7 @@ export default component$(() => {
                       </div>
                       <input
                         type="text"
-                        placeholder="Search by vehicle, user, status..."
+                        placeholder="Search by vehicle, user..."
                         value={searchTerm.value}
                         onInput$={(e) => {
                           searchTerm.value = (e.target as HTMLInputElement).value;
@@ -288,7 +291,6 @@ export default component$(() => {
                         <th class="py-3 px-6">User Gmail</th>
                         <th class="py-3 px-6">Start</th>
                         <th class="py-3 px-6">End</th>
-                        <th class="py-3 px-6">Status</th>
                         <th class="py-3 px-6">Total Price</th>
                         <th class="py-3 px-6">Action</th>
                       </tr>
@@ -301,7 +303,6 @@ export default component$(() => {
                             <td class="py-4 px-6"><div class="text-sm text-gray-700">{b.userEmail}</div></td>
                             <td class="py-4 px-6"><div class="text-sm text-gray-700">{formatDateTime(b.startDateTime)}</div></td>
                             <td class="py-4 px-6"><div class="text-sm text-gray-700">{formatDateTime(b.endDateTime)}</div></td>
-                            <td class="py-4 px-6"><span class={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(b.status)}`}>{b.status}</span></td>
                             <td class="py-4 px-6"><div class="text-sm text-gray-700">{b.totalPrice.toLocaleString()}</div></td>
                             <td class="py-4 px-6">
                               <div class="flex items-center gap-2">
@@ -314,7 +315,7 @@ export default component$(() => {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={7} class="text-center py-6 text-gray-400">No bookings available.</td>
+                          <td colSpan={6} class="text-center py-6 text-gray-400">No bookings available.</td>
                         </tr>
                       )}
                     </tbody>
