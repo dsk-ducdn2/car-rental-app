@@ -3,6 +3,7 @@ import { QwikCityProvider, RouterOutlet } from "@builder.io/qwik-city";
 import { RouterHead } from "./components/router-head/router-head";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 import { PWAUpdatePrompt } from "./components/PWAUpdatePrompt";
+import ThemeToggle from "./components/ThemeToggle";
 
 import "./global.css";
 
@@ -25,11 +26,16 @@ export default component$(() => {
           />
         )}
         <RouterHead />
+        <script dangerouslySetInnerHTML={`(function(){try{var s=localStorage.getItem('theme');var m=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;var d=s? s==='dark' : m; if(d){document.documentElement.classList.add('dark');}}catch(e){}})();`}></script>
       </head>
       <body lang="en">
         <RouterOutlet />
         <PWAInstallPrompt />
         <PWAUpdatePrompt />
+        {/* Floating theme toggle for global access */}
+        <div class="fixed bottom-4 right-4 z-50">
+          <ThemeToggle />
+        </div>
       </body>
     </QwikCityProvider>
   );

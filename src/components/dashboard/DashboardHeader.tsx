@@ -1,5 +1,6 @@
 import { component$ } from '@builder.io/qwik';
 import { useLocation } from '@builder.io/qwik-city';
+import ThemeToggle from '../../components/ThemeToggle';
 
 function toTitleCase(str: string) {
   return str.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -29,7 +30,7 @@ export const DashboardHeader = component$(() => {
           <span class="truncate"> / {lastPart}</span>
         </div>
       </div>
-      {/* Search box */}
+      {/* Search box + theme */}
       <div class="flex items-center ml-auto">
         <div class="flex items-center border border-gray-300 rounded-lg bg-white px-2 md:px-3 py-1 w-32 md:w-56 shadow-sm">
           <svg class="text-gray-400 mr-2" width="16" height="16" fill="none" viewBox="0 0 24 24">
@@ -41,6 +42,7 @@ export const DashboardHeader = component$(() => {
             class="outline-none border-none bg-transparent text-gray-700 w-full placeholder-gray-400 text-xs md:text-base"
           />
         </div>
+        <ThemeToggle />
       </div>
     </header>
   );

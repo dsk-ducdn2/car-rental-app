@@ -1,4 +1,5 @@
 import { component$, useSignal } from '@builder.io/qwik';
+import ThemeToggle from '../ThemeToggle';
 
 export default component$(() => {
   const open = useSignal(false);
@@ -20,7 +21,10 @@ export default component$(() => {
         </a>
       </nav>
       {/* Mobile hamburger */}
-      <button class="md:hidden flex items-center p-2" onClick$={() => (open.value = !open.value)} aria-label="Open menu">
+      <div class="hidden md:flex items-center ml-auto">
+        <ThemeToggle />
+      </div>
+      <button class="md:hidden flex items-center p-2 ml-auto" onClick$={() => (open.value = !open.value)} aria-label="Open menu">
         <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><rect y="5" width="24" height="2" rx="1" fill="#2563eb"/><rect y="11" width="24" height="2" rx="1" fill="#2563eb"/><rect y="17" width="24" height="2" rx="1" fill="#2563eb"/></svg>
       </button>
       {/* Mobile menu dropdown */}
@@ -34,6 +38,7 @@ export default component$(() => {
             Registration Form
             <svg width="22" height="22" fill="none" viewBox="0 0 22 22"><path d="M7 11h8m0 0-3-3m3 3-3 3" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </a>
+          <ThemeToggle />
         </div>
       )}
     </header>
