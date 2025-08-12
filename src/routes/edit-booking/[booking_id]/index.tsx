@@ -13,7 +13,9 @@ export default component$(() => {
 
   const form = useStore({
     vehicleId: '',
+    vehicleName: '',
     userId: '',
+    userEmail: '',
     startDateTime: '',
     endDateTime: '',
     status: 'PENDING',
@@ -50,9 +52,11 @@ export default component$(() => {
         const data = await res.json();
         const b = Array.isArray(data) ? data[0] : data;
         form.vehicleId = b.vehicleId || b.vehicle?.id || '';
+        form.vehicleName = b.vehicleName || b.vehicle?.name || `${b.vehicle?.brand || ''} ${b.vehicle?.licensePlate || ''}`.trim();
         form.userId = b.userId || b.user?.id || '';
-        form.startDateTime = (b.startDateTime || b.start_datetime || '').slice(0, 16);
-        form.endDateTime = (b.endDateTime || b.end_datetime || '').slice(0, 16);
+        form.userEmail = b.userEmail || b.user?.email || b.user?.gmail || '';
+        form.startDateTime = (b.startDateTime || b.start_datetime || b.startDatetime || '').slice(0, 16);
+        form.endDateTime = (b.endDateTime || b.end_datetime || b.endDatetime || '').slice(0, 16);
         form.status = (b.status || 'PENDING').toString().toUpperCase();
         form.totalPrice = Number(b.totalPrice ?? b.total_price ?? 0);
       }
@@ -69,6 +73,7 @@ export default component$(() => {
     error.value = '';
     success.value = '';
     try {
+      // Only allow totalPrice to be updated; keep other fields from original form values
       const payload: any = {
         vehicleId: form.vehicleId,
         userId: form.userId,
@@ -119,46 +124,32 @@ export default component$(() => {
                 {success.value && (<div class="p-3 bg-green-50 border border-green-200 rounded text-green-700 text-sm">{success.value}</div>)}
 
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Vehicle</label>
-                  <select value={form.vehicleId} onChange$={(e) => (form.vehicleId = (e.target as HTMLSelectElement).value)} class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                    <option value="">Select a vehicle</option>
-                    {vehicles.map((v) => (<option key={v.id} value={v.id}>{v.label}</option>))}
-                  </select>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Vehicle Name</label>
+                  <input type="text" value={form.vehicleName} disabled class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600" />
                 </div>
 
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">User</label>
-                  <select value={form.userId} onChange$={(e) => (form.userId = (e.target as HTMLSelectElement).value)} class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                    <option value="">Select a user</option>
-                    {users.map((u) => (<option key={u.id} value={u.id}>{u.label}</option>))}
-                  </select>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">User Gmail</label>
+                  <input type="text" value={form.userEmail} disabled class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600" />
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Start</label>
-                    <input type="datetime-local" value={form.startDateTime} onInput$={(e) => (form.startDateTime = (e.target as HTMLInputElement).value)} class="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Start Date Time</label>
+                    <input type="datetime-local" value={form.startDateTime} disabled class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600" />
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">End</label>
-                    <input type="datetime-local" value={form.endDateTime} onInput$={(e) => (form.endDateTime = (e.target as HTMLInputElement).value)} class="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                    <label class="block text-sm font-medium text-gray-700 mb-1">End Date Time</label>
+                    <input type="datetime-local" value={form.endDateTime} disabled class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600" />
                   </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select value={form.status} onChange$={(e) => (form.status = (e.target as HTMLSelectElement).value)} class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                      <option value="PENDING">PENDING</option>
-                      <option value="CONFIRMED">CONFIRMED</option>
-                      <option value="CANCELLED">CANCELLED</option>
-                      <option value="COMPLETED">COMPLETED</option>
-                    </select>
-                  </div>
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Total Price</label>
-                    <input type="number" value={String(form.totalPrice)} onInput$={(e) => (form.totalPrice = Number((e.target as HTMLInputElement).value || 0))} class="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                    <input type="number" step="1000" value={String(form.totalPrice)} onInput$={(e) => (form.totalPrice = Number((e.target as HTMLInputElement).value || 0))} class="w-full px-3 py-2 border border-gray-300 rounded-lg" />
                   </div>
+                  <div></div>
                 </div>
 
                 <div class="pt-4 flex items-center gap-3">

@@ -217,7 +217,7 @@ export default component$(() => {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Total Price</label>
-                     <input type="number" value={String(form.totalPrice)} disabled={!form.vehicleId} onInput$={(e) => (form.totalPrice = Number((e.target as HTMLInputElement).value || 0))} class={`w-full px-3 py-2 border rounded-lg ${!form.vehicleId ? 'bg-gray-100 border-gray-200 text-gray-400' : 'border-gray-300'}`} />
+                     <input type="number" step="1000" value={String(form.totalPrice)} disabled={!form.vehicleId} onInput$={(e) => (form.totalPrice = Number((e.target as HTMLInputElement).value || 0))} class={`w-full px-3 py-2 border rounded-lg ${!form.vehicleId ? 'bg-gray-100 border-gray-200 text-gray-400' : 'border-gray-300'}`} />
                   </div>
                   <div></div>
                 </div>
@@ -383,7 +383,7 @@ export const DateRangePicker = component$<DateRangePickerProps & { maintenanceDa
       )}
       <div class="flex items-center justify-between mb-1">
         <button onClick$={() => (startMonthOffset.value = startMonthOffset.value - 1)} class="px-2 py-0.5 text-gray-600 hover:text-gray-800 border rounded-md leading-none">◀</button>
-        <div class="text-sm text-gray-600">Chọn khoảng ngày</div>
+        <div class="text-sm text-gray-600">Pick date</div>
         <button onClick$={() => (startMonthOffset.value = startMonthOffset.value + 1)} class="px-2 py-0.5 text-gray-600 hover:text-gray-800 border rounded-md leading-none">▶</button>
       </div>
       <div class="flex justify-center items-center gap-4 h-[340px]">
