@@ -429,12 +429,22 @@ export default component$(() => {
                               </div>
                             </td>
                             <td class="py-4 px-6">
-                              <button
-                                onClick$={() => openDelete(schedule.id)}
-                                class="text-red-600 font-semibold hover:underline text-sm px-2 py-1 rounded hover:bg-red-50"
-                              >
-                                Delete
-                              </button>
+                              <div class="flex items-center gap-2">
+                                <a
+                                  href={`/maintenance-log/${schedule.id}`}
+                                  class="text-blue-600 font-semibold hover:underline text-sm px-2 py-1 rounded hover:bg-blue-50"
+                                  title="View maintenance log"
+                                >
+                                  View Log
+                                </a>
+                                <span class="text-gray-300">|</span>
+                                <button
+                                  onClick$={() => openDelete(schedule.id)}
+                                  class="text-red-600 font-semibold hover:underline text-sm px-2 py-1 rounded hover:bg-red-50"
+                                >
+                                  Delete
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))
