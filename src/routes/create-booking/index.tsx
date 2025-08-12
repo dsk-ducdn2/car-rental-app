@@ -260,6 +260,13 @@ export const DateRangePicker = component$<DateRangePickerProps & { maintenanceDa
 
   const viDays = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
 
+  // Disallow booking past dates
+  const todayIso = (() => {
+    const now = new Date();
+    const local = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return `${local.getFullYear()}-${String(local.getMonth() + 1).padStart(2, '0')}-${String(local.getDate()).padStart(2, '0')}`;
+  })();
+
   const addMonths = (date: Date, months: number) => {
     const d = new Date(date);
     d.setMonth(d.getMonth() + months);
@@ -309,14 +316,16 @@ export const DateRangePicker = component$<DateRangePickerProps & { maintenanceDa
   };
 
   const onPick = $((iso: string) => {
-    // Block picking on maintenance days
-    if (maintenanceDates.includes(iso) || bookedDates.includes(iso)) return;
+    // Block picking on maintenance days, booked days, and past days
+    if (maintenanceDates.includes(iso) || bookedDates.includes(iso) || iso < todayIso) return;
     if (!selected.start || (selected.start && selected.end)) {
       selected.start = iso;
       selected.end = null;
     } else if (selected.start && !selected.end) {
       const startIso = iso < selected.start ? iso : selected.start;
       const endIso = iso < selected.start ? selected.start : iso;
+      // Prevent selecting a range that includes past dates
+      if (startIso < todayIso) return;
       if (intersectsBlocked(startIso, endIso, [...maintenanceDates, ...bookedDates])) return; // do not allow ranges that include blocked days
       selected.start = startIso;
       selected.end = endIso;
@@ -344,6 +353,7 @@ export const DateRangePicker = component$<DateRangePickerProps & { maintenanceDa
               const baseClasses = 'w-7 h-7 rounded-full cursor-pointer select-none flex items-center justify-center text-[12px]';
               const isMaint = maintenanceDates.includes(iso);
               const isBooked = bookedDates.includes(iso);
+              const isPast = iso < todayIso;
               const color = isStart || isEnd
                 ? 'bg-red-600 text-white'
                 : inRange
@@ -354,15 +364,17 @@ export const DateRangePicker = component$<DateRangePickerProps & { maintenanceDa
                           ? 'bg-blue-100 text-blue-800 ring-1 ring-blue-300 cursor-not-allowed'
                           : isMaint
                             ? 'bg-yellow-100 text-yellow-800 ring-1 ring-yellow-300 cursor-not-allowed'
-                            : 'bg-transparent hover:bg-white text-gray-800'
+                            : isPast
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'bg-transparent hover:bg-white text-gray-800'
                       )
                     : 'bg-transparent text-gray-400';
               const sunday = d.getDay() === 0 && inMonth && !(isStart || isEnd || inRange);
               return (
                 <button
                   key={di}
-                  disabled={isMaint || isBooked}
-                  title={isBooked ? 'Booked' : isMaint ? 'Scheduled maintenance' : ''}
+                  disabled={isMaint || isBooked || isPast}
+                  title={isPast ? 'Past date' : isBooked ? 'Booked' : isMaint ? 'Scheduled maintenance' : ''}
                   onClick$={() => onPick(iso)}
                   class={`${baseClasses} ${color} ${sunday ? 'text-red-500' : ''}`}
                 >

@@ -56,7 +56,9 @@ export default component$(() => {
 
       const res = await fetchWithAuth(`${API_ROOT}/MaintenanceLog/${maintenanceId}`);
       if (res.ok) {
-        const data = await res.json();
+        // Some APIs return 204 or empty body; avoid throwing on res.json()
+        const dataText = await res.text().catch(() => '');
+        const data = dataText ? JSON.parse(dataText) : null;
         // Support both a single object or array response
         const first = Array.isArray(data) ? (data[0] ?? null) : data;
         if (first) {
@@ -75,11 +77,24 @@ export default component$(() => {
             }
           }
           // If API does not include created_by, keep prefilled value from token
+        } else {
+          // No content/null/empty array: treat as no log yet. Do not set error.
+          error.value = '';
         }
+      } else if (res.status === 404 || res.status === 204) {
+        // No log exists yet; not an error
+        error.value = '';
+      } else {
+        // Other error statuses
+        const errMsg = await res.text().catch(() => '');
+        error.value = errMsg || 'Failed to load maintenance log';
       }
     } catch (e) {
       console.error('Failed to load maintenance log', e);
-      error.value = 'Failed to load maintenance log';
+      // Swallow JSON parse errors for empty bodies
+      if (!String(e).toLowerCase().includes('json')) {
+        error.value = 'Failed to load maintenance log';
+      }
     } finally {
       loading.value = false;
     }
