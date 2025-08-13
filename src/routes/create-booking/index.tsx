@@ -26,6 +26,9 @@ export default component$(() => {
   const success = useSignal('');
   const maintenanceDates = useStore<string[]>([]); // YYYY-MM-DD dates to highlight (maintenance)
   const bookedDates = useStore<string[]>([]); // YYYY-MM-DD dates that are already booked
+  const ruleDates = useStore<string[]>([]); // YYYY-MM-DD dates with special pricing rules
+  const rulePriceByDate = useStore<Record<string, number>>({}); // map ISO date -> price per day
+  const vehicleBasePrice = useSignal(0); // base price per day of selected vehicle
 
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async () => {
@@ -53,15 +56,19 @@ export default component$(() => {
     }
   });
 
-  // Load disabled dates for the selected vehicle (split into maintenance vs booked)
+  // Load disabled dates for the selected vehicle (split into maintenance vs booked) and rule dates
   const loadMaintenanceDates = $(async (vehicleId: string) => {
     maintenanceDates.splice(0, maintenanceDates.length);
     bookedDates.splice(0, bookedDates.length);
+    ruleDates.splice(0, ruleDates.length);
+    for (const k of Object.keys(rulePriceByDate)) delete rulePriceByDate[k];
     if (!vehicleId) return;
     try {
-      const [maintRes, bookedRes] = await Promise.all([
+      const [maintRes, bookedRes, ruleRes, vehicleRes] = await Promise.all([
         fetchWithAuth(`${API_URL}/Maintenance`).catch(() => undefined as unknown as Response),
         fetchWithAuth(`${API_URL}/Booking/booked-dates/${vehicleId}`).catch(() => undefined as unknown as Response),
+        fetchWithAuth(`${API_URL}/VehiclePricingRule/${vehicleId}`).catch(() => undefined as unknown as Response),
+        fetchWithAuth(`${API_URL}/Vehicles/${vehicleId}`).catch(() => undefined as unknown as Response),
       ]);
 
       // Maintenance days
@@ -102,11 +109,47 @@ export default component$(() => {
           }
         }
       }
+
+      // Pricing Rule days (effectiveDate..expiryDate inclusive)
+      if (ruleRes && ruleRes.ok) {
+        const data = await ruleRes.json().catch(() => []);
+        const rules = Array.isArray(data) ? data : data ? [data] : [];
+        // Determine base price from vehicle details if needed
+        let basePrice = 0;
+        if (vehicleRes && vehicleRes.ok) {
+          const vehicle = await vehicleRes.json().catch(() => ({} as any));
+          const activeRule = vehicle?.vehiclePricingRules && vehicle.vehiclePricingRules.length > 0
+            ? vehicle.vehiclePricingRules[0]
+            : null;
+          basePrice = Number(activeRule?.pricePerDay || vehicle?.pricePerDay || 0) || 0;
+          vehicleBasePrice.value = basePrice;
+        }
+        for (const r of rules) {
+          const startRaw = r?.effectiveDate || r?.effective_date;
+          const endRaw = r?.expiryDate || r?.expiry_date || r?.expiredDate;
+          if (!startRaw || !endRaw) continue;
+          const start = new Date(startRaw);
+          const end = new Date(endRaw);
+          if (isNaN(start.getTime()) || isNaN(end.getTime())) continue;
+          const perDay = Number(r?.pricePerDay) || (Number(r?.holidayMultiplier) ? Number(r.holidayMultiplier) * basePrice : 0);
+          // Iterate day-by-day
+          const d = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+          const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+          while (d <= endDay) {
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            ruleDates.push(key);
+            if (perDay > 0) rulePriceByDate[key] = perDay;
+            d.setDate(d.getDate() + 1);
+          }
+        }
+      }
       // De-duplicate within each bucket
       const uniqMaint = Array.from(new Set([...maintenanceDates]));
       const uniqBooked = Array.from(new Set([...bookedDates]));
+      const uniqRule = Array.from(new Set([...ruleDates]));
       maintenanceDates.splice(0, maintenanceDates.length, ...uniqMaint);
       bookedDates.splice(0, bookedDates.length, ...uniqBooked);
+      ruleDates.splice(0, ruleDates.length, ...uniqRule);
     } catch (e) {
       console.error('Failed to load disabled dates', e);
     }
@@ -182,6 +225,10 @@ export default component$(() => {
                      onChange$={$((e: Event) => {
                        const id = (e.target as HTMLSelectElement).value;
                        form.vehicleId = id;
+                        // reset selected dates and total when switching vehicle
+                        form.startDateTime = '';
+                        form.endDateTime = '';
+                        form.totalPrice = 0;
                        loadMaintenanceDates(id);
                      })}
                      class="w-full px-3 py-2 border border-gray-300 rounded-lg"
@@ -197,9 +244,25 @@ export default component$(() => {
                   onChange$={$((start: string, end: string) => {
                     form.startDateTime = start;
                     form.endDateTime = end;
+                    // Calculate total price based on base price and rule-specific overrides
+                    const toDate = (s: string) => new Date(`${s}T00:00:00`);
+                    let total = 0;
+                    if (start && end) {
+                      const d = toDate(start);
+                      const endD = toDate(end);
+                      while (d <= endD) {
+                        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                        const price = (rulePriceByDate as any)[key] ?? vehicleBasePrice.value;
+                        total += Number(price) || 0;
+                        d.setDate(d.getDate() + 1);
+                      }
+                    }
+                    form.totalPrice = total;
                   })}
                   maintenanceDates={maintenanceDates}
                   bookedDates={bookedDates}
+                  ruleDates={ruleDates}
+                  rulePriceByDate={rulePriceByDate}
                   disabled={!form.vehicleId}
                 />
 
@@ -217,7 +280,7 @@ export default component$(() => {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Total Price</label>
-                     <input type="number" step="1000" value={String(form.totalPrice)} disabled={!form.vehicleId} onInput$={(e) => (form.totalPrice = Number((e.target as HTMLInputElement).value || 0))} class={`w-full px-3 py-2 border rounded-lg ${!form.vehicleId ? 'bg-gray-100 border-gray-200 text-gray-400' : 'border-gray-300'}`} />
+                     <input type="text" readOnly value={String(form.totalPrice)} disabled={!form.vehicleId} class={`w-full px-3 py-2 border rounded-lg ${!form.vehicleId ? 'bg-gray-100 border-gray-200 text-gray-400' : 'border-gray-300 bg-gray-50'}`} />
                   </div>
                   <div></div>
                 </div>
@@ -254,9 +317,12 @@ const intersectsBlocked = (startIso: string, endIso: string, blocked: string[]):
 // Inline Date Range Picker (2 months side-by-side)
 interface DateRangePickerProps { onChange$: PropFunction<(start: string, end: string) => void>; disabled?: boolean }
 
-export const DateRangePicker = component$<DateRangePickerProps & { maintenanceDates?: string[]; bookedDates?: string[] }>(({ onChange$, maintenanceDates = [], bookedDates = [], disabled = false }) => {
+export const DateRangePicker = component$<DateRangePickerProps & { maintenanceDates?: string[]; bookedDates?: string[]; ruleDates?: string[]; rulePriceByDate?: Record<string, number> }>(({ onChange$, maintenanceDates = [], bookedDates = [], ruleDates = [], rulePriceByDate = {}, disabled = false }) => {
   const startMonthOffset = useSignal(0); // relative to today
   const selected = useStore<{ start: string | null; end: string | null }>({ start: null, end: null });
+  const formatVnd = (n: number) =>
+    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(n || 0);
+
 
   const viDays = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
 
@@ -354,6 +420,8 @@ export const DateRangePicker = component$<DateRangePickerProps & { maintenanceDa
               const isMaint = maintenanceDates.includes(iso);
               const isBooked = bookedDates.includes(iso);
               const isPast = iso < todayIso;
+              const isRule = ruleDates.includes(iso);
+              const rulePrice = isRule ? Number((rulePriceByDate as any)[iso] || 0) : 0;
               const color = isStart || isEnd
                 ? 'bg-red-600 text-white'
                 : inRange
@@ -366,7 +434,9 @@ export const DateRangePicker = component$<DateRangePickerProps & { maintenanceDa
                             ? 'bg-yellow-100 text-yellow-800 ring-1 ring-yellow-300 cursor-not-allowed'
                             : isPast
                               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                              : 'bg-transparent hover:bg-white text-gray-800'
+                              : isRule
+                                ? 'bg-purple-100 text-purple-800 ring-1 ring-purple-300'
+                                : 'bg-transparent hover:bg-white text-gray-800'
                       )
                     : 'bg-transparent text-gray-400';
               const sunday = d.getDay() === 0 && inMonth && !(isStart || isEnd || inRange);
@@ -374,7 +444,7 @@ export const DateRangePicker = component$<DateRangePickerProps & { maintenanceDa
                 <button
                   key={di}
                   disabled={isMaint || isBooked || isPast}
-                  title={isPast ? 'Past date' : isBooked ? 'Booked' : isMaint ? 'Scheduled maintenance' : ''}
+                  title={isPast ? 'Past date' : isBooked ? 'Booked' : isMaint ? 'Scheduled maintenance' : isRule ? `Special pricing: ${rulePrice > 0 ? formatVnd(rulePrice) + '/ngày' : ''}` : ''}
                   onClick$={() => onPick(iso)}
                   class={`${baseClasses} ${color} ${sunday ? 'text-red-500' : ''}`}
                 >
