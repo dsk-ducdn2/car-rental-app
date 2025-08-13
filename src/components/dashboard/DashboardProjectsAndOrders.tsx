@@ -144,7 +144,7 @@ export const DashboardProjectsAndOrders = component$(() => {
     <div class="flex flex-col lg:flex-row gap-2 lg:gap-6 mt-8">
       <div class="bg-white rounded-2xl shadow p-4 md:p-8 flex-1 min-w-full md:min-w-[400px] min-h-[400px] mb-2 lg:mb-0">
         <div class="flex items-center justify-between mb-4">
-          <div class="text-lg font-bold">Bảo trì sắp diễn ra (3 ngày tới)</div>
+          <div class="text-lg font-bold">Upcoming Maintenance (Next 3 Days)</div>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full min-w-[600px] text-left table-fixed">

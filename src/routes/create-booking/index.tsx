@@ -205,7 +205,7 @@ export default component$(() => {
         <DashboardHeader />
         <div class="px-2 sm:px-4 md:px-8">
           <h1 class="text-2xl font-bold mb-6">Create Booking</h1>
-          <div class="bg-white rounded shadow p-6 max-w-2xl">
+          <div class="bg-white rounded shadow p-6 max-w-6xl">
             {loading.value ? (
               <div class="space-y-4">
                 <div class="h-10 bg-gray-200 rounded animate-pulse"></div>
@@ -214,7 +214,7 @@ export default component$(() => {
                 <div class="h-10 bg-gray-200 rounded animate-pulse"></div>
               </div>
             ) : (
-              <div class="space-y-4">
+              <div class="space-y-6">
                 {error.value && (<div class="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">{error.value}</div>)}
                 {success.value && (<div class="p-3 bg-green-50 border border-green-200 rounded text-green-700 text-sm">{success.value}</div>)}
 
@@ -240,56 +240,56 @@ export default component$(() => {
 
                 {/* User selection removed; userId is taken from JWT */}
 
-                <DateRangePicker
-                  onChange$={$((start: string, end: string) => {
-                    form.startDateTime = start;
-                    form.endDateTime = end;
-                    // Calculate total price based on base price and rule-specific overrides
-                    const toDate = (s: string) => new Date(`${s}T00:00:00`);
-                    let total = 0;
-                    if (start && end) {
-                      const d = toDate(start);
-                      const endD = toDate(end);
-                      while (d <= endD) {
-                        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                        const price = (rulePriceByDate as any)[key] ?? vehicleBasePrice.value;
-                        total += Number(price) || 0;
-                        d.setDate(d.getDate() + 1);
-                      }
-                    }
-                    form.totalPrice = total;
-                  })}
-                  maintenanceDates={maintenanceDates}
-                  bookedDates={bookedDates}
-                  ruleDates={ruleDates}
-                  rulePriceByDate={rulePriceByDate}
-                  disabled={!form.vehicleId}
-                />
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Start date</label>
-                     <input type="text" readOnly value={form.startDateTime} disabled={!form.vehicleId} class={`w-full px-3 py-2 border rounded-lg ${!form.vehicleId ? 'bg-gray-100 border-gray-200 text-gray-400' : 'border-gray-200 bg-gray-50'}`} />
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                  {/* Left: Calendar + Save */}
+                  <div class="lg:col-span-2">
+                    <DateRangePicker
+                      onChange$={$((start: string, end: string) => {
+                        form.startDateTime = start;
+                        form.endDateTime = end;
+                        const toDate = (s: string) => new Date(`${s}T00:00:00`);
+                        let total = 0;
+                        if (start && end) {
+                          const d = toDate(start);
+                          const endD = toDate(end);
+                          while (d <= endD) {
+                            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                            const price = (rulePriceByDate as any)[key] ?? vehicleBasePrice.value;
+                            total += Number(price) || 0;
+                            d.setDate(d.getDate() + 1);
+                          }
+                        }
+                        form.totalPrice = total;
+                      })}
+                      maintenanceDates={maintenanceDates}
+                      bookedDates={bookedDates}
+                      ruleDates={ruleDates}
+                      rulePriceByDate={rulePriceByDate}
+                      disabled={!form.vehicleId}
+                    />
                   </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">End date</label>
-                     <input type="text" readOnly value={form.endDateTime} disabled={!form.vehicleId} class={`w-full px-3 py-2 border rounded-lg ${!form.vehicleId ? 'bg-gray-100 border-gray-200 text-gray-400' : 'border-gray-200 bg-gray-50'}`} />
-                  </div>
-                </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Total Price</label>
-                     <input type="text" readOnly value={String(form.totalPrice)} disabled={!form.vehicleId} class={`w-full px-3 py-2 border rounded-lg ${!form.vehicleId ? 'bg-gray-100 border-gray-200 text-gray-400' : 'border-gray-300 bg-gray-50'}`} />
+                  {/* Right: Details stacked + Back at bottom */}
+                  <div class="lg:col-span-1 flex flex-col gap-4 h-full">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">Start date</label>
+                      <input type="text" readOnly value={form.startDateTime} disabled={!form.vehicleId} class={`w-full px-3 py-2 border rounded-lg ${!form.vehicleId ? 'bg-gray-100 border-gray-200 text-gray-400' : 'border-gray-200 bg-gray-50'}`} />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">End date</label>
+                      <input type="text" readOnly value={form.endDateTime} disabled={!form.vehicleId} class={`w-full px-3 py-2 border rounded-lg ${!form.vehicleId ? 'bg-gray-100 border-gray-200 text-gray-400' : 'border-gray-200 bg-gray-50'}`} />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">Total Price</label>
+                      <input type="text" readOnly value={String(form.totalPrice)} disabled={!form.vehicleId} class={`w-full px-3 py-2 border rounded-lg ${!form.vehicleId ? 'bg-gray-100 border-gray-200 text-gray-400' : 'border-gray-300 bg-gray-50'}`} />
+                    </div>
+                    <div class="mt-auto flex items-center gap-3 justify-end">
+                      <button onClick$={handleSave} disabled={saving.value || !form.vehicleId} class={`px-4 py-2 rounded-lg text-white ${saving.value || !form.vehicleId ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'} transition-colors`}>
+                        {saving.value ? 'Saving…' : 'Save'}
+                      </button>
+                      <a href="/booking" class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">Back</a>
+                    </div>
                   </div>
-                  <div></div>
-                </div>
-
-                <div class="pt-4 flex items-center gap-3">
-                  <button onClick$={handleSave} disabled={saving.value || !form.vehicleId} class={`px-4 py-2 rounded-lg text-white ${saving.value || !form.vehicleId ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'} transition-colors`}>
-                    {saving.value ? 'Saving…' : 'Save'}
-                  </button>
-                  <a href="/booking" class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">Back</a>
                 </div>
               </div>
             )}

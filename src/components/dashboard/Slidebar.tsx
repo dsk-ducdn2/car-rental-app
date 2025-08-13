@@ -169,7 +169,9 @@ export const Sidebar = component$(() => {
     ]}>
       {/* Logo + Toggle */}
       <div class="flex items-center justify-between mb-8 px-2">
-        <img src="/favicon.svg" alt="Logo" class="w-12 h-12 mx-auto" />
+        <a href="/" aria-label="Go to Home" class="mx-auto block">
+          <img src="/favicon.svg" alt="Logo" class="w-12 h-12" />
+        </a>
         <button
           type="button"
           aria-label={collapsed.value ? 'Mở rộng sidebar' : 'Thu nhỏ sidebar'}
