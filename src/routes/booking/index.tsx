@@ -84,6 +84,7 @@ export default component$(() => {
   const ITEMS_PER_PAGE = 8;
   const currentPage = useSignal(1);
   const searchTerm = useSignal('');
+  const filterDate = useSignal(''); // YYYY-MM-DD
 
   // Notification + delete dialog
   const showNotification = useSignal(false);
@@ -100,6 +101,24 @@ export default component$(() => {
         b.vehicleName.toLowerCase().includes(s) ||
         b.userEmail.toLowerCase().includes(s)
       );
+    }
+    if (filterDate.value) {
+      const ymd = filterDate.value; // already YYYY-MM-DD from input[type=date]
+      const toYmd = (iso: string) => {
+        if (!iso) return '';
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return String(iso).slice(0, 10);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      };
+      filtered = filtered.filter((b) => {
+        const s = toYmd(b.startDateTime);
+        const e = toYmd(b.endDateTime);
+        if (!s || !e) return false;
+        return ymd >= s && ymd <= e;
+      });
     }
     return filtered;
   });
@@ -273,6 +292,26 @@ export default component$(() => {
                       />
                     </div>
                   </div>
+                  <div class="flex items-center gap-2">
+                    <label class="text-sm text-gray-600">Filter date</label>
+                    <input
+                      type="date"
+                      value={filterDate.value}
+                      onInput$={(e) => {
+                        filterDate.value = (e.target as HTMLInputElement).value;
+                        currentPage.value = 1;
+                      }}
+                      class="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    />
+                    {filterDate.value && (
+                      <button
+                        onClick$={() => { filterDate.value = ''; currentPage.value = 1; }}
+                        class="text-gray-600 hover:text-gray-800 text-sm px-2 py-1 border border-gray-300 rounded"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
                   <a
                     href="/create-booking"
                     class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg shadow transition"
@@ -298,16 +337,14 @@ export default component$(() => {
                     <tbody>
                       {Array.isArray(paginatedBookings.value) && paginatedBookings.value.length > 0 ? (
                         paginatedBookings.value.map((b, idx) => (
-                          <tr key={idx} class="border-b border-gray-200 hover:bg-gray-50">
-                            <td class="py-4 px-6"><div class="text-sm text-gray-800">{b.vehicleName}</div></td>
-                            <td class="py-4 px-6"><div class="text-sm text-gray-700">{b.userEmail}</div></td>
-                            <td class="py-4 px-6"><div class="text-sm text-gray-700">{formatDateTime(b.startDateTime)}</div></td>
-                            <td class="py-4 px-6"><div class="text-sm text-gray-700">{formatDateTime(b.endDateTime)}</div></td>
-                            <td class="py-4 px-6"><div class="text-sm text-gray-700">{b.totalPrice.toLocaleString()}</div></td>
+                          <tr key={idx} class="group hoverable-row border-b border-gray-200 hover:bg-gray-50">
+                            <td class="py-4 px-6"><div class="row-text text-sm text-gray-800 transition-colors">{b.vehicleName}</div></td>
+                            <td class="py-4 px-6"><div class="row-text text-sm text-gray-700 transition-colors">{b.userEmail}</div></td>
+                            <td class="py-4 px-6"><div class="row-text text-sm text-gray-700 transition-colors">{formatDateTime(b.startDateTime)}</div></td>
+                            <td class="py-4 px-6"><div class="row-text text-sm text-gray-700 transition-colors">{formatDateTime(b.endDateTime)}</div></td>
+                            <td class="py-4 px-6"><div class="row-text text-sm text-gray-700 transition-colors">{b.totalPrice.toLocaleString()}</div></td>
                             <td class="py-4 px-6">
                               <div class="flex items-center gap-2">
-                                <a href={`/edit-booking/${b.id}`} class="text-blue-600 font-semibold hover:underline text-sm px-2 py-1 rounded hover:bg-blue-50">Edit</a>
-                                <span class="text-gray-300">|</span>
                                 <button onClick$={() => openDelete(b.id)} class="text-red-600 font-semibold hover:underline text-sm px-2 py-1 rounded hover:bg-red-50">Delete</button>
                               </div>
                             </td>

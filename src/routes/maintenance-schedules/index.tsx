@@ -405,18 +405,18 @@ export default component$(() => {
                     <tbody>
                       {Array.isArray(paginatedSchedules.value) && paginatedSchedules.value.length > 0 ? (
                         paginatedSchedules.value.map((schedule: MaintenanceSchedule, idx: number) => (
-                          <tr key={idx} class="border-b border-gray-200 hover:bg-gray-50">
+                          <tr key={idx} class="group hoverable-row border-b border-gray-200 hover:bg-gray-50">
                             <td class="py-4 px-6">
-                              <div class="text-sm text-gray-700 font-semibold">{schedule.vehicleName}</div>
+                              <div class="row-text text-sm text-gray-700 font-semibold transition-colors">{schedule.vehicleName}</div>
                               {schedule.vehicle?.companyName && (
-                                <div class="text-xs text-gray-500">{schedule.vehicle.companyName}</div>
+                                <div class="row-text text-xs text-gray-500 transition-colors">{schedule.vehicle.companyName}</div>
                               )}
                             </td>
                             <td class="py-4 px-6">
-                              <div class="text-sm text-gray-700 font-medium">{schedule.title}</div>
+                              <div class="row-text text-sm text-gray-700 font-medium transition-colors">{schedule.title}</div>
                             </td>
                             <td class="py-4 px-6">
-                              <div class="text-sm text-gray-700">{formatDate(schedule.scheduledDate)}</div>
+                              <div class="row-text text-sm text-gray-700 transition-colors">{formatDate(schedule.scheduledDate)}</div>
                             </td>
                             <td class="py-4 px-6">
                               <span class={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(schedule.status)}`}>
@@ -424,7 +424,7 @@ export default component$(() => {
                               </span>
                             </td>
                             <td class="py-4 px-6">
-                              <div class="text-sm text-gray-700 max-w-xs truncate" title={schedule.description}>
+                              <div class="row-text text-sm text-gray-700 max-w-xs truncate transition-colors" title={schedule.description}>
                                 {schedule.description}
                               </div>
                             </td>

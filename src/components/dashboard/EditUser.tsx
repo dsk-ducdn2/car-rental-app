@@ -133,8 +133,10 @@ export default component$((props: { user: Author }) => {
       email: email.value,
       phone: phoneNumber.value,
       companyId: selectedCompany.value ?? null,
-      roleId: selectedRole.value ? Number(selectedRole.value) : undefined,
-      ...(needsPasswordField.value ? { password: password.value } : {})
+      ...(needsPasswordField.value ? { password: password.value } : {}),
+      ...(!isEditingSelf.value && selectedRole.value
+        ? { roleId: Number(selectedRole.value) }
+        : {})
     };
 
     try {
@@ -274,33 +276,35 @@ export default component$((props: { user: Author }) => {
           )}
         </div>
 
-        <div>
-          <label class="block text-sm font-semibold mb-1 text-gray-700">Role</label>
-          <div class="flex gap-6 mt-2">
-            <label class="inline-flex items-center">
-              <input
-                type="radio"
-                name="role"
-                value="1"
-                checked={selectedRole.value === '1'}
-                onChange$={() => (selectedRole.value = '1')}
-                class="form-radio text-blue-600"
-              />
-              <span class="ml-2">Admin</span>
-            </label>
-            <label class="inline-flex items-center">
-              <input
-                type="radio"
-                name="role"
-                value="2"
-                checked={selectedRole.value === '2'}
-                onChange$={() => (selectedRole.value = '2')}
-                class="form-radio text-blue-600"
-              />
-              <span class="ml-2">User</span>
-            </label>
+        {!isEditingSelf.value && (
+          <div>
+            <label class="block text-sm font-semibold mb-1 text-gray-700">Role</label>
+            <div class="flex gap-6 mt-2">
+              <label class="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="role"
+                  value="1"
+                  checked={selectedRole.value === '1'}
+                  onChange$={() => (selectedRole.value = '1')}
+                  class="form-radio text-blue-600"
+                />
+                <span class="ml-2">Admin</span>
+              </label>
+              <label class="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="role"
+                  value="2"
+                  checked={selectedRole.value === '2'}
+                  onChange$={() => (selectedRole.value = '2')}
+                  class="form-radio text-blue-600"
+                />
+                <span class="ml-2">User</span>
+              </label>
+            </div>
           </div>
-        </div>
+        )}
 
         {formState.serverError && (
           <div class="text-red-600 text-sm font-medium text-center">

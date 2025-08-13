@@ -453,7 +453,7 @@ export default component$<TableAuthorsProps>(({ authors }) => {
           <tbody>
             {Array.isArray(paginatedAuthors.value) && paginatedAuthors.value.length > 0 ? (
               paginatedAuthors.value.map((author: Author, idx: number) => (
-                <tr key={idx} class="border-b border-gray-200 hover:bg-gray-50">
+                <tr key={idx} class="group hoverable-row border-b border-gray-200 hover:bg-gray-50">
                   <td class="py-4 px-6 flex items-center gap-3">
                     {/* <img 
                       src={author.avatar || 'https://via.placeholder.com/40x40'} 
@@ -463,14 +463,14 @@ export default component$<TableAuthorsProps>(({ authors }) => {
                       height="40" 
                     /> */}
                     <div>
-                      <div class="font-semibold text-gray-800">{author.name}</div>
+                      <div class="row-text font-semibold text-gray-800 transition-colors">{author.name}</div>
                     </div>
                   </td>
                   <td class="py-4 px-6">
-                    <div class="text-sm text-gray-700">{author.email}</div>
+                    <div class="row-text text-sm text-gray-700 transition-colors">{author.email}</div>
                   </td>
                   <td class="py-4 px-6">
-                    <div class="text-sm text-gray-700">{author.phoneNumber}</div>
+                    <div class="row-text text-sm text-gray-700 transition-colors">{author.phoneNumber}</div>
                   </td>
                   <td class="py-4 px-6">
                     <button

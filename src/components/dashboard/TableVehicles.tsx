@@ -371,21 +371,21 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
           <tbody>
             {Array.isArray(paginatedVehicles.value) && paginatedVehicles.value.length > 0 ? (
               paginatedVehicles.value.map((vehicle: Vehicle, idx: number) => (
-                <tr key={idx} class="border-b border-gray-200 hover:bg-gray-50">
+                <tr key={idx} class="group hoverable-row border-b border-gray-200 hover:bg-gray-50">
                   <td class="py-4 px-6">
-                    <div class="text-sm text-gray-700">{vehicle.companyName}</div>
+                    <div class="row-text text-sm text-gray-700 transition-colors">{vehicle.companyName}</div>
                   </td>
                   <td class="py-4 px-6">
-                    <div class="text-sm text-gray-700 font-mono">{vehicle.licensePlate}</div>
+                    <div class="row-text text-sm text-gray-700 font-mono transition-colors">{vehicle.licensePlate}</div>
                   </td>
                   <td class="py-4 px-6">
-                    <div class="text-sm text-gray-700 font-semibold">{vehicle.brand}</div>
+                    <div class="row-text text-sm text-gray-700 font-semibold transition-colors">{vehicle.brand}</div>
                   </td>
                   <td class="py-4 px-6">
-                    <div class="text-sm text-gray-700">{vehicle.yearManufacture}</div>
+                    <div class="row-text text-sm text-gray-700 transition-colors">{vehicle.yearManufacture}</div>
                   </td>
                   <td class="py-4 px-6">
-                    <div class="text-sm text-gray-700">{vehicle.mileage.toLocaleString()} km</div>
+                    <div class="row-text text-sm text-gray-700 transition-colors">{vehicle.mileage.toLocaleString()} km</div>
                   </td>
                   <td class="py-4 px-6">
                     <span class={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(vehicle.status.toLowerCase())}`}>

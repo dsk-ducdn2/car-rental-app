@@ -49,4 +49,10 @@ html, body {
 .dark select { color: var(--c-text); background-color: var(--c-card); border-color: var(--c-border); }
 .dark textarea { color: var(--c-text); background-color: var(--c-card); border-color: var(--c-border); }
 
+/* Dark mode table row hover: make text black for hovered row to ensure contrast on light hover bg */
+.dark .hoverable-row:hover { background-color: #f3f4f6 !important; }
+.dark .hoverable-row:hover .row-text { color: #000000 !important; }
+.dark .hoverable-row:hover a, 
+.dark .hoverable-row:hover button { color: #000000 !important; }
+
 

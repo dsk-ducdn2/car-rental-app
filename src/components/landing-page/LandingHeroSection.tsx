@@ -4,7 +4,7 @@ export default component$(() => (
   <section class="flex-1 flex flex-col md:flex-row items-center justify-between gap-8 px-8 py-12 md:py-0 max-w-7xl mx-auto w-full">
     {/* Left */}
     <div class="flex-1 flex flex-col justify-center max-w-xl pt-8 md:pt-0">
-      <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4 leading-tight">
+		<h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-4 leading-tight">
         Self-Drive Car Rental Management System for Businesses
       </h1>
       <p class="text-lg text-gray-700 mb-6 max-w-md">

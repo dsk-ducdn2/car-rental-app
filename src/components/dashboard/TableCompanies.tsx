@@ -288,18 +288,18 @@ export default component$<TableCompaniesProps>(({ companies }) => {
           <tbody>
             {Array.isArray(paginatedCompanies.value) && paginatedCompanies.value.length > 0 ? (
               paginatedCompanies.value.map((company: Company, idx: number) => (
-                <tr key={idx} class="border-b border-gray-200 hover:bg-gray-50">
+                <tr key={idx} class="group hoverable-row border-b border-gray-200 hover:bg-gray-50">
                   <td class="py-4 px-6">
-                    <div class="font-semibold text-gray-800">{company.name}</div>
+                    <div class="row-text font-semibold text-gray-800 transition-colors">{company.name}</div>
                   </td>
                   <td class="py-4 px-6">
-                    <div class="text-sm text-gray-700">{company.email}</div>
+                    <div class="row-text text-sm text-gray-700 transition-colors">{company.email}</div>
                   </td>
                   <td class="py-4 px-6">
-                    <div class="text-sm text-gray-700">{company.phone}</div>
+                    <div class="row-text text-sm text-gray-700 transition-colors">{company.phone}</div>
                   </td>
                   <td class="py-4 px-6">
-                    <div class="text-sm text-gray-700">{company.address}</div>
+                    <div class="row-text text-sm text-gray-700 transition-colors">{company.address}</div>
                   </td>
 
                   <td class="py-4 px-6">
