@@ -177,7 +177,7 @@ export default component$(() => {
         status: 'PENDING',
         totalPrice: Number(form.totalPrice) || 0,
       };
-      let res = await fetchWithAuth(`${API_URL}/Bookings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(() => undefined as unknown as Response);
+      let res = await fetchWithAuth(`${API_URL}/Booking`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(() => undefined as unknown as Response);
       if (!res || !res.ok) {
         res = await fetchWithAuth(`${API_URL}/Booking`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(() => undefined as unknown as Response);
       }

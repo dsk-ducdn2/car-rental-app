@@ -214,8 +214,9 @@ export default component$(() => {
                     <input
                       type="text"
                       value={form.created_by}
-                      onInput$={(e) => (form.created_by = (e.target as HTMLInputElement).value)}
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                      readOnly
+                      disabled
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
                     />
                   </div>
                   <div>
@@ -223,8 +224,9 @@ export default component$(() => {
                     <input
                       type="datetime-local"
                       value={form.created_at}
-                      onInput$={(e) => (form.created_at = (e.target as HTMLInputElement).value)}
-                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                      readOnly
+                      disabled
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700"
                     />
                   </div>
                 </div>

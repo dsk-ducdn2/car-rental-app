@@ -15,7 +15,7 @@ interface Vehicle {
   licensePlate: string;
   brand: string;
   yearManufacture: number;
-  status: string;
+  status?: string;
   mileage: number;
   purchaseDate: string;
   pricePerDay: number;
@@ -32,6 +32,7 @@ interface Company {
 export default component$((props: { vehicle: Vehicle }) => {
   const { vehicle } = props;
   const API_URL = import.meta.env.VITE_API_URL;
+  const isUpdate = Boolean(vehicle?.id);
 
   const companyId = useSignal(vehicle.companyId || '');
   const licensePlate = useSignal(vehicle.licensePlate);
@@ -117,9 +118,11 @@ export default component$((props: { vehicle: Vehicle }) => {
       }
     }
 
-    if (!status.value.trim()) {
-      formErrors.status = 'Status is required';
-      hasError = true;
+    if (isUpdate) {
+      if (!String(status.value || '').trim()) {
+        formErrors.status = 'Status is required';
+        hasError = true;
+      }
     }
 
     if (!mileage.value.trim()) {
@@ -154,7 +157,6 @@ export default component$((props: { vehicle: Vehicle }) => {
       return;
     }
 
-    const isUpdate = Boolean(vehicle?.id);
     const url = isUpdate 
       ? `${API_URL}/Vehicles/${vehicle.id}` 
       : `${API_URL}/Vehicles`;
@@ -162,17 +164,17 @@ export default component$((props: { vehicle: Vehicle }) => {
     // Get UserId from token
     const userId = getUserIdFromToken();
     
-    const body = {
+    const body: any = {
       companyId: companyId.value,
       licensePlate: licensePlate.value,
       brand: brand.value,
       yearManufacture: parseInt(yearManufacture.value),
-      status: status.value,
       mileage: parseFloat(mileage.value),
       purchaseDate: purchaseDate.value,
       pricePerDay: parseFloat(price.value),
       userId: userId,
     };
+    body.status = isUpdate ? (status.value || 'AVAILABLE') : 'AVAILABLE';
 
     try {
       const res = await fetchWithAuth(url, {
@@ -317,6 +319,24 @@ export default component$((props: { vehicle: Vehicle }) => {
           </div>
 
           <div>
+            <label class="block text-sm font-semibold mb-1 text-gray-700">Price (VND)</label>
+            <input
+              type="number"
+              value={price.value}
+              onInput$={(e) => (price.value = (e.target as HTMLInputElement).value)}
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              placeholder="e.g., 500000"
+              min="0"
+              step="1000"
+            />
+            {formErrors.price && (
+              <div class="text-red-600 text-sm mt-1">{formErrors.price}</div>
+            )}
+          </div>
+        </div>
+
+        {isUpdate && (
+          <div>
             <label class="block text-sm font-semibold mb-1 text-gray-700">Status</label>
             <select
               value={status.value}
@@ -332,37 +352,19 @@ export default component$((props: { vehicle: Vehicle }) => {
               <div class="text-red-600 text-sm mt-1">{formErrors.status}</div>
             )}
           </div>
-        </div>
+        )}
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label class="block text-sm font-semibold mb-1 text-gray-700">Purchase Date</label>
-            <input
-              type="date"
-              value={purchaseDate.value}
-              onInput$={(e) => (purchaseDate.value = (e.target as HTMLInputElement).value)}
-              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-            {formErrors.purchaseDate && (
-              <div class="text-red-600 text-sm mt-1">{formErrors.purchaseDate}</div>
-            )}
-          </div>
-
-          <div>
-            <label class="block text-sm font-semibold mb-1 text-gray-700">Price (VND)</label>
-            <input
-              type="number"
-              value={price.value}
-              onInput$={(e) => (price.value = (e.target as HTMLInputElement).value)}
-              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="e.g., 500000"
-              min="0"
-              step="1000"
-            />
-            {formErrors.price && (
-              <div class="text-red-600 text-sm mt-1">{formErrors.price}</div>
-            )}
-          </div>
+        <div>
+          <label class="block text-sm font-semibold mb-1 text-gray-700">Purchase Date</label>
+          <input
+            type="date"
+            value={purchaseDate.value}
+            onInput$={(e) => (purchaseDate.value = (e.target as HTMLInputElement).value)}
+            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+          {formErrors.purchaseDate && (
+            <div class="text-red-600 text-sm mt-1">{formErrors.purchaseDate}</div>
+          )}
         </div>
 
         {formState.serverError && (

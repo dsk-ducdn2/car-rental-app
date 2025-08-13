@@ -134,7 +134,7 @@ export default component$(() => {
   useVisibleTask$(async () => {
     try {
       // Try plural then singular
-      let res = await fetchWithAuth(`${API_URL}/Bookings`).catch(() => undefined as unknown as Response);
+      let res = await fetchWithAuth(`${API_URL}/Booking`).catch(() => undefined as unknown as Response);
       if (!res || !res.ok) {
         res = await fetchWithAuth(`${API_URL}/Booking`).catch(() => undefined as unknown as Response);
       }
@@ -166,7 +166,7 @@ export default component$(() => {
     if (!deletingBookingId.value) return;
     try {
       // Try plural then singular
-      let res = await fetchWithAuth(`${API_URL}/Bookings/${deletingBookingId.value}`, { method: 'DELETE' }).catch(() => undefined as unknown as Response);
+      let res = await fetchWithAuth(`${API_URL}/Booking/${deletingBookingId.value}`, { method: 'DELETE' }).catch(() => undefined as unknown as Response);
       if (!res || !res.ok) {
         res = await fetchWithAuth(`${API_URL}/Booking/${deletingBookingId.value}`, { method: 'DELETE' }).catch(() => undefined as unknown as Response);
       }

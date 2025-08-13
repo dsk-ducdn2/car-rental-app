@@ -3,7 +3,6 @@ import { DashboardHeader } from '../../components/dashboard/DashboardHeader';
 import { DashboardFeatureCards } from '../../components/dashboard/DashboardFeatureCards';
 import { DashboardStatsOverview } from '../../components/dashboard/DashboardStatsOverview';
 import { DashboardProjectsAndOrders } from '../../components/dashboard/DashboardProjectsAndOrders';
-import { DashboardFooter } from '../../components/dashboard/DashboardFooter';
 import { Sidebar } from '../../components/dashboard/Slidebar';
 import { StatsCards } from '../../components/dashboard/StatsCards';
 
@@ -24,7 +23,6 @@ export default component$(() => (
         </div>
         <DashboardStatsOverview />
         <DashboardProjectsAndOrders />
-        <DashboardFooter />
       </div>
     </main>
   </div>

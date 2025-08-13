@@ -10,7 +10,6 @@ export default component$(() => {
     licensePlate: '',
     brand: '',
     yearManufacture: new Date().getFullYear(),
-    status: 'AVAILABLE',
     mileage: 0,
     purchaseDate: '',
     pricePerDay: 0,

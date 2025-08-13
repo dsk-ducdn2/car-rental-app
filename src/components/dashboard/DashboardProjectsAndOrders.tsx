@@ -1,81 +1,50 @@
-import { component$ } from '@builder.io/qwik';
+import { component$, useStore, useVisibleTask$, useComputed$ } from '@builder.io/qwik';
+import { fetchWithAuth } from '../../utils/api';
 
-const projects = [
-  {
-    logo: (
-      // Adobe XD icon
-      <svg width="24" height="24" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#470137"/><text x="50%" y="60%" text-anchor="middle" fill="#ff61f6" font-size="12" font-weight="bold" font-family="Arial">XD</text></svg>
-    ),
-    name: 'SOFT UI XD VERSION',
-    members: [1, 2, 3, 4],
-    budget: '$14,000',
-    completion: 70,
-    color: 'bg-gradient-to-r from-cyan-400 to-blue-500',
-  },
-  {
-    logo: (
-      // Google icon
-      <svg width="24" height="24" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#fff"/><g><circle cx="12" cy="12" r="10" fill="#4285F4"/><path d="M12 2a10 10 0 0 1 7.07 2.93l-2.83 2.83A6 6 0 0 0 12 6V2z" fill="#34A853"/><path d="M12 2v4a6 6 0 0 0-4.24 1.76L4.93 4.93A10 10 0 0 1 12 2z" fill="#FBBC05"/><path d="M2 12a10 10 0 0 1 2.93-7.07l2.83 2.83A6 6 0 0 0 6 12H2z" fill="#EA4335"/></g></svg>
-    ),
-    name: 'ADD PROGRESS TRACK',
-    members: [2, 3],
-    budget: '$3,000',
-    completion: 20,
-    color: 'bg-gradient-to-r from-blue-400 to-blue-200',
-  },
-  {
-    logo: (
-      // Slack icon
-      <svg width="24" height="24" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#fff"/><g><rect x="10" y="2" width="4" height="8" rx="2" fill="#36C5F0"/><rect x="2" y="10" width="8" height="4" rx="2" fill="#2EB67D"/><rect x="14" y="10" width="8" height="4" rx="2" fill="#ECB22E"/><rect x="10" y="14" width="4" height="8" rx="2" fill="#E01E5A"/></g></svg>
-    ),
-    name: 'FIX PLATFORM ERRORS',
-    members: [1, 4],
-    budget: 'NOT SET',
-    completion: 100,
-    color: 'bg-green-400',
-  },
-  {
-    logo: (
-      // Spotify icon
-      <svg width="24" height="24" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#1ED760"/><circle cx="12" cy="12" r="8" fill="#191414"/><path d="M8 15c2.5-1 5.5-1 8 0" stroke="#1ED760" stroke-width="1.5" stroke-linecap="round"/><path d="M9 12c2-0.7 4-0.7 6 0" stroke="#1ED760" stroke-width="1.2" stroke-linecap="round"/><path d="M10 10c1.2-0.4 2.8-0.4 4 0" stroke="#1ED760" stroke-width="1" stroke-linecap="round"/></svg>
-    ),
-    name: 'LAUNCH OUR MOBILE APP',
-    members: [1, 2, 3, 4],
-    budget: '$20,500',
-    completion: 100,
-    color: 'bg-green-400',
-  },
-  {
-    logo: (
-      // Trello icon
-      <svg width="24" height="24" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#fff"/><rect x="3" y="3" width="18" height="18" rx="4" fill="#026AA7"/><rect x="6" y="6" width="4" height="12" rx="1" fill="#fff"/><rect x="14" y="6" width="4" height="7" rx="1" fill="#fff"/></svg>
-    ),
-    name: 'ADD THE NEW PRICING PAGE',
-    members: [5],
-    budget: '$500',
-    completion: 30,
-    color: 'bg-gradient-to-r from-cyan-400 to-blue-500',
-  },
-  {
-    logo: (
-      // Inkscape icon
-      <svg width="24" height="24" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#fff"/><path d="M12 4L20 18H4L12 4Z" fill="#222"/><circle cx="12" cy="18" r="2" fill="#222"/></svg>
-    ),
-    name: 'REDESIGN NEW ONLINE SHOP',
-    members: [1, 2],
-    budget: '$2,000',
-    completion: 60,
-    color: 'bg-gradient-to-r from-blue-400 to-blue-200',
-  },
-];
+interface MaintenanceSchedule {
+  id: string;
+  vehicleId: string;
+  vehicleName: string;
+  scheduledDate: string; // YYYY-MM-DD
+  status: string;
+  companyName?: string;
+}
 
-const membersAvatars = [
-  'https://randomuser.me/api/portraits/men/32.jpg',
-  'https://randomuser.me/api/portraits/women/44.jpg',
-  'https://randomuser.me/api/portraits/men/45.jpg',
-  'https://randomuser.me/api/portraits/women/46.jpg',
-  'https://randomuser.me/api/portraits/men/47.jpg',
-];
+const normalizeStatus = (raw: unknown): string => {
+  const mapByCode: Record<string, string> = {
+    '1': 'SCHEDULED',
+    '2': 'SCHEDULED',
+    '3': 'IN_PROGRESS',
+    '4': 'FINISHED',
+  };
+  if (raw === null || raw === undefined) return 'SCHEDULED';
+  const str = String(raw).trim();
+  if (mapByCode[str] !== undefined) return mapByCode[str];
+  const upper = str.toUpperCase();
+  if (upper === 'REMINDER_SENT') return 'SCHEDULED';
+  if (upper === 'SCHEDULED' || upper === 'IN_PROGRESS' || upper === 'FINISHED') return upper;
+  return 'SCHEDULED';
+};
+
+const transformMaintenanceData = (schedules: any[]): MaintenanceSchedule[] => {
+  if (!Array.isArray(schedules)) return [];
+  return schedules.map((schedule, index) => {
+    const vehicle = schedule.vehicle || {};
+    const brand = vehicle.brand || schedule.brand || '';
+    const license = vehicle.licensePlate || schedule.licensePlate || '';
+    const name = `${brand} ${license}`.trim();
+    const rawDate: string = schedule.scheduledDate || schedule.scheduled_date || schedule.date || '';
+    const dateOnly = rawDate ? String(rawDate).split('T')[0] : '';
+    return {
+      id: schedule.id || `schedule-${index}`,
+      vehicleId: schedule.vehicleId || vehicle.id || '',
+      vehicleName: name || schedule.vehicleName || 'N/A',
+      scheduledDate: dateOnly,
+      status: normalizeStatus(schedule.status || 'scheduled'),
+      companyName: vehicle.companyName || schedule.companyName || undefined,
+    };
+  });
+};
 
 const orders = [
   {
@@ -140,79 +109,90 @@ const orders = [
   },
 ];
 
-export const DashboardProjectsAndOrders = component$(() => (
-  <div class="flex flex-col lg:flex-row gap-2 lg:gap-6 mt-8">
-    {/* Projects Card */}
-    <div class="bg-white rounded-2xl shadow p-4 md:p-8 flex-1 min-w-full md:min-w-[400px] min-h-[400px] mb-2 lg:mb-0">
-      <div class="flex items-center justify-between mb-4">
-        <div class="text-lg font-bold">Projects</div>
-        <div class="text-sm text-blue-500 font-semibold">✓ 30 DONE <span class="text-gray-400 font-normal">THIS MONTH</span></div>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[600px] text-left table-fixed">
-          <thead>
-            <tr class="text-xs text-gray-400 uppercase">
-              <th class="py-2 w-2/5">COMPANIES</th>
-              <th class="py-2 w-1/5">MEMBERS</th>
-              <th class="py-2 w-1/5">BUDGET</th>
-              <th class="py-2 w-1/5">COMPLETION</th>
-            </tr>
-          </thead>
-          <tbody>
-            {projects.map((p) => (
-              <tr key={p.name} class="border-b border-gray-200 last:border-b-0">
-                <td class="py-3 flex items-center gap-2 font-semibold">{p.logo}{p.name}</td>
-                <td class="py-3">
-                  <div class="flex -space-x-2">
-                    {p.members.map((m) => (
-                      <div key={m} class="w-7 h-7 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center overflow-hidden">
-                        <img 
-                          src={membersAvatars[m-1]} 
-                          alt={`Member ${m}`}
-                          class="w-full h-full object-cover rounded-full"
-                          width="28" 
-                          height="28"
-                          loading="lazy"
-                          onError$={(e: Event) => {
-                            const img = e.target as HTMLImageElement;
-                            img.style.display = 'none';
-                            const parent = img.parentElement;
-                            if (parent) {
-                              parent.innerHTML = `<span class="text-xs text-gray-500 font-semibold">${m}</span>`;
-                            }
-                          }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </td>
-                <td class="py-3 font-semibold text-gray-500">{p.budget}</td>
-                <td class="py-3">
-                  <div class="w-32 h-2 bg-gray-200 rounded-full">
-                    <div class={`h-2 rounded-full ${p.color}`} style={{ width: `${p.completion}%` }}></div>
-                  </div>
-                </td>
+export const DashboardProjectsAndOrders = component$(() => {
+  const apiUrl = import.meta.env.VITE_API_URL;
+  const store = useStore<{ items: MaintenanceSchedule[]; loading: boolean }>({ items: [], loading: true });
+
+  // eslint-disable-next-line qwik/no-use-visible-task
+  useVisibleTask$(async () => {
+    try {
+      const res = await fetchWithAuth(`${apiUrl}/Maintenance`);
+      const data = await res.json();
+      const all = transformMaintenanceData(data);
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const in3Days = new Date(today);
+      in3Days.setDate(in3Days.getDate() + 3);
+
+      store.items = all.filter((s) => {
+        if (!s.scheduledDate) return false;
+        const d = new Date(s.scheduledDate);
+        d.setHours(0, 0, 0, 0);
+        return d >= today && d <= in3Days && (s.status === 'SCHEDULED' || s.status === 'IN_PROGRESS');
+      });
+    } catch (err) {
+      store.items = [];
+    } finally {
+      store.loading = false;
+    }
+  });
+
+  const hasItems = useComputed$(() => Array.isArray(store.items) && store.items.length > 0);
+
+  return (
+    <div class="flex flex-col lg:flex-row gap-2 lg:gap-6 mt-8">
+      <div class="bg-white rounded-2xl shadow p-4 md:p-8 flex-1 min-w-full md:min-w-[400px] min-h-[400px] mb-2 lg:mb-0">
+        <div class="flex items-center justify-between mb-4">
+          <div class="text-lg font-bold">Bảo trì sắp diễn ra (3 ngày tới)</div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[600px] text-left table-fixed">
+            <thead>
+              <tr class="text-xs text-gray-400 uppercase">
+                <th class="py-2 w-2/5">VEHICLE</th>
+                <th class="py-2 w-1/5">COMPANY</th>
+                <th class="py-2 w-1/5">SCHEDULED DATE</th>
+                <th class="py-2 w-1/5">STATUS</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {!store.loading && !hasItems.value && (
+                <tr>
+                  <td class="py-6 text-center text-gray-400" colSpan={4}>Không có lịch bảo trì trong 3 ngày tới.</td>
+                </tr>
+              )}
+              {store.items.map((item) => (
+                <tr key={`${item.id}`} class="border-b border-gray-200 last:border-b-0">
+                  <td class="py-3 font-semibold">{item.vehicleName}</td>
+                  <td class="py-3 text-gray-600">{item.companyName || '-'}</td>
+                  <td class="py-3 text-gray-700">{new Date(item.scheduledDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</td>
+                  <td class="py-3">
+                    <span class={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${item.status === 'FINISHED' ? 'bg-green-100 text-green-700' : item.status === 'IN_PROGRESS' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                      {item.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl shadow p-4 md:p-8 w-full lg:w-96 min-h-[400px] mt-2 lg:mt-0">
+        <div class="font-bold mb-2">Orders overview</div>
+        <div class="text-green-500 text-sm font-semibold mb-4">↑ 24% <span class="text-gray-400 font-normal">THIS MONTH</span></div>
+        <ul class="space-y-4">
+          {orders.map((o, index) => (
+            <li key={index} class="flex items-start gap-2">
+              <div>{o.icon}</div>
+              <div>
+                <div class={`font-semibold text-sm ${o.color}`}>{o.text}</div>
+                <div class="text-xs text-gray-400">{o.date}</div>
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
-    {/* Orders Overview Card */}
-    <div class="bg-white rounded-2xl shadow p-4 md:p-8 w-full lg:w-96 min-h-[400px] mt-2 lg:mt-0">
-      <div class="font-bold mb-2">Orders overview</div>
-      <div class="text-green-500 text-sm font-semibold mb-4">↑ 24% <span class="text-gray-400 font-normal">THIS MONTH</span></div>
-      <ul class="space-y-4">
-        {orders.map((o, index) => (
-          <li key={index} class="flex items-start gap-2">
-            <div>{o.icon}</div>
-            <div>
-              <div class={`font-semibold text-sm ${o.color}`}>{o.text}</div>
-              <div class="text-xs text-gray-400">{o.date}</div>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </div>
-  </div>
-)); 
+  );
+});

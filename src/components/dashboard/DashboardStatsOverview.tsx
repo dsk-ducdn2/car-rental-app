@@ -84,7 +84,7 @@ export const DashboardStatsOverview = component$(() => {
       // Bookings: try plural then singular, then fallback to mock data if available
       let bookingsRes: Response | undefined = undefined;
       try {
-        bookingsRes = await fetchWithAuth(`${API_URL}/Bookings`);
+        bookingsRes = await fetchWithAuth(`${API_URL}/Booking`);
         if (!bookingsRes.ok) throw new Error('Bookings not ok');
       } catch (_) {
         try {
