@@ -1,6 +1,7 @@
-import { component$, useSignal, $ } from '@builder.io/qwik';
+import { component$, useSignal, $, useVisibleTask$, useComputed$ } from '@builder.io/qwik';
 import { useLocation } from '@builder.io/qwik-city';
 import ThemeToggle from '../../components/ThemeToggle';
+import { jwtDecode } from 'jwt-decode';
 
 function toTitleCase(str: string) {
   return str.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -15,6 +16,7 @@ export const DashboardHeader = component$(() => {
   // Quick module navigation search
   const searchQuery = useSignal('');
   const isFocused = useSignal(false);
+  const role = useSignal<string | undefined>(undefined);
   const modules = [
     { label: 'Dashboard', path: '/dashboard' },
     { label: 'Users', path: '/users' },
@@ -23,14 +25,38 @@ export const DashboardHeader = component$(() => {
     { label: 'Maintenance Schedules', path: '/maintenance-schedules' },
     { label: 'Booking', path: '/booking' },
   ];
+  const filteredModules = useComputed$(() =>
+    role.value === 'user'
+      ? modules.filter(m => m.label !== 'Users' && m.label !== 'Companies')
+      : modules
+  );
   const navigateTo = $((path: string) => { window.location.href = path; });
   const onEnter = $((e: KeyboardEvent) => {
     if (e.key !== 'Enter') return;
     const q = searchQuery.value.trim().toLowerCase();
     if (!q) return;
-    const matches = modules.filter(m => m.label.toLowerCase().includes(q));
+    const matches = filteredModules.value.filter(m => m.label.toLowerCase().includes(q));
     if (matches.length > 0) {
       navigateTo(matches[0].path);
+    }
+  });
+
+  useVisibleTask$(() => {
+    function getCookie(name: string) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(';').shift();
+    }
+
+    const accessToken = getCookie('access_token');
+    if (accessToken) {
+      try {
+        const decoded = jwtDecode<any>(accessToken);
+        const roleFromToken = decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+        role.value = roleFromToken;
+      } catch (err) {
+        console.error('Invalid access token', err);
+      }
     }
   });
 
@@ -72,7 +98,7 @@ export const DashboardHeader = component$(() => {
         {/* Suggestions dropdown */}
         {isFocused.value && searchQuery.value.trim() && (
           <div class="absolute top-full mt-1 right-16 md:right-20 w-56 bg-white border border-gray-200 rounded-lg shadow z-50">
-            {modules
+            {filteredModules.value
               .filter(m => m.label.toLowerCase().includes(searchQuery.value.trim().toLowerCase()))
               .map(m => (
                 <button key={m.path} onClick$={() => navigateTo(m.path)} class="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm">

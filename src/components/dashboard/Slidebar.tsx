@@ -37,7 +37,7 @@ export const Sidebar = component$(() => {
   const userId = useSignal<string | undefined>(undefined);
   // Tìm index của menu item có href khớp với url hiện tại
   // Lọc menu theo role
-  const filteredMenu = menu.filter(item => !(item.label === 'Users' && role.value === 'user'));
+  const filteredMenu = menu.filter(item => !(role.value === 'user' && (item.label === 'Users' || item.label === 'Companies')));
   
   // Fix logic để highlight đúng tab
   const activeIndex = filteredMenu.findIndex(item => {
