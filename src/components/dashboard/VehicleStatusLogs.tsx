@@ -1,5 +1,5 @@
 import { component$, useSignal, $, useVisibleTask$ } from '@builder.io/qwik';
-import { fetchWithAuth } from '../../utils/api';
+import { fetchWithAuth, getUserIdFromToken } from '../../utils/api';
 
 interface VehicleStatusLog {
   id: number;
@@ -92,6 +92,23 @@ export default component$<VehicleStatusLogsProps>(({ vehicleId }) => {
         url += `?${params.toString()}`;
       }
 
+      // Resolve current user's role and company for filtering
+      let isAdmin = false;
+      let userCompanyId: string | null = null;
+      try {
+        const uid = getUserIdFromToken();
+        if (uid) {
+          const uRes = await fetchWithAuth(`${API_URL}/Users/${uid}`);
+          if (uRes.ok) {
+            const u = await uRes.json();
+            isAdmin = Number(u?.roleId) === 1;
+            if (u?.companyId) userCompanyId = String(u.companyId);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to resolve user for status log filtering', e);
+      }
+
       const res = await fetchWithAuth(url);
       if (res.ok) {
         const data = await res.json();
@@ -110,6 +127,13 @@ export default component$<VehicleStatusLogsProps>(({ vehicleId }) => {
         if (selectedStatus.value && filteredData.length > 0) {
           filteredData = filteredData.filter((log: VehicleStatusLog) => 
             log.newStatus?.toUpperCase() === selectedStatus.value.toUpperCase()
+          );
+        }
+
+        // If user is not admin, restrict to logs of vehicles in user's company
+        if (!isAdmin && userCompanyId && filteredData.length > 0) {
+          filteredData = filteredData.filter((log: VehicleStatusLog) =>
+            String(log?.vehicle?.companyId ?? log?.vehicle?.company?.id ?? '') === userCompanyId
           );
         }
         

@@ -1,7 +1,7 @@
 import { component$, useStore, useVisibleTask$, useSignal, useComputed$, $ } from '@builder.io/qwik';
 import { Sidebar } from '../../components/dashboard/Slidebar';
 import { DashboardHeader } from '../../components/dashboard/DashboardHeader';
-import { fetchWithAuth } from '../../utils/api';
+import { fetchWithAuth, getUserIdFromToken } from '../../utils/api';
 
 interface MaintenanceSchedule {
   id: string;
@@ -46,12 +46,17 @@ const transformMaintenanceData = (schedules: any[]) => {
   if (!Array.isArray(schedules)) return [];
   return schedules.map((schedule, index) => {
     const vehicle = schedule.vehicle || {};
-    const brand = vehicle.brand || schedule.brand || '';
-    const license = vehicle.licensePlate || schedule.licensePlate || '';
+    const license =
+      vehicle.licensePlate ||
+      schedule.licensePlate ||
+      vehicle.license_plate ||
+      schedule.license_plate ||
+      '';
     return {
       id: schedule.id || `schedule-${index}`,
       vehicleId: schedule.vehicleId || vehicle.id || '',
-      vehicleName: `${brand} ${license}`.trim() || schedule.vehicleName || 'N/A',
+      // Show only license plate in UI
+      vehicleName: String(license).trim() || schedule.vehicleName || 'N/A',
       title: schedule.title || 'N/A',
       description: schedule.description || 'N/A',
       scheduledDate: schedule.scheduledDate ? String(schedule.scheduledDate).split('T')[0] : 'N/A',
@@ -133,8 +138,35 @@ export default component$(() => {
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async () => {
     try {
+      // Resolve current user role/company for filtering
+      let isAdmin = false;
+      let userCompanyId: string | null = null;
+      try {
+        const uid = getUserIdFromToken();
+        if (uid) {
+          const uRes = await fetchWithAuth(`${API_URL}/Users/${uid}`);
+          if (uRes.ok) {
+            const u = await uRes.json();
+            isAdmin = Number(u?.roleId) === 1;
+            if (u?.companyId) userCompanyId = String(u.companyId);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to resolve user for maintenance filtering', e);
+      }
+
       const res = await fetchWithAuth(`${API_URL}/Maintenance`);
-      const data = await res.json();
+      let data = await res.json();
+
+      // If not admin, restrict schedules to user's company by vehicle company id
+      if (!isAdmin && userCompanyId && Array.isArray(data)) {
+        data = data.filter((s: any) => {
+          const vehicle = s?.vehicle ?? {};
+          const vCompanyId = String(vehicle?.companyId ?? vehicle?.company?.id ?? '');
+          return vCompanyId === userCompanyId;
+        });
+      }
+
       store.schedules = transformMaintenanceData(data);
     } catch (error) {
       console.error('Failed to fetch maintenance schedules:', error);

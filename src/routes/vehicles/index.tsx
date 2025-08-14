@@ -2,7 +2,7 @@ import { component$, useStore, useVisibleTask$ } from '@builder.io/qwik';
 import { Sidebar } from '../../components/dashboard/Slidebar';
 import { DashboardHeader } from '../../components/dashboard/DashboardHeader';
 import TableVehicles from '../../components/dashboard/TableVehicles';
-import { fetchWithAuth } from '../../utils/api';
+import { fetchWithAuth, getUserIdFromToken } from '../../utils/api';
 
 interface Vehicle {
   id: string;
@@ -55,8 +55,36 @@ export default component$(() => {
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async () => {
     try {
+      // Determine current user and role
+      let isAdmin = false;
+      let userCompanyId: string | null = null;
+      try {
+        const uid = getUserIdFromToken();
+        if (uid) {
+          const uRes = await fetchWithAuth(`${API_URL}/Users/${uid}`);
+          if (uRes.ok) {
+            const u = await uRes.json();
+            isAdmin = Number(u?.roleId) === 1;
+            if (u?.companyId) userCompanyId = String(u.companyId);
+          }
+        }
+      } catch (e) {
+        // If user cannot be resolved, fall back to full list
+        console.error('Failed to resolve current user role/company for vehicle filtering', e);
+      }
+
       const res = await fetchWithAuth(`${API_URL}/Vehicles`);
-      const data = await res.json();
+      let data = await res.json();
+
+      // If not admin, restrict vehicles to the user's company
+      if (!isAdmin && userCompanyId) {
+        if (Array.isArray(data)) {
+          data = data.filter((v: any) =>
+            String(v?.companyId ?? v?.company?.id ?? '') === userCompanyId
+          );
+        }
+      }
+
       store.vehicles = transformVehicleData(data);
     } catch (error) {
       console.error('Failed to fetch vehicles:', error);

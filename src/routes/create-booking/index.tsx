@@ -1,9 +1,7 @@
 import { component$, useStore, useVisibleTask$, useSignal, $, PropFunction } from '@builder.io/qwik';
-import { getCookie } from '../../utils/api';
-import { jwtDecode } from 'jwt-decode';
+import { fetchWithAuth, getUserIdFromToken, getCookie } from '../../utils/api';
 import { Sidebar } from '../../components/dashboard/Slidebar';
 import { DashboardHeader } from '../../components/dashboard/DashboardHeader';
-import { fetchWithAuth } from '../../utils/api';
 
 interface Option { id: string; label: string }
 
@@ -33,22 +31,41 @@ export default component$(() => {
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async () => {
     try {
-      const [vRes] = await Promise.all([
-        fetchWithAuth(`${API_URL}/Vehicles`),
-      ]);
-      if (vRes.ok) {
-        const v = await vRes.json();
-        vehicles.splice(0, vehicles.length, ...v.map((x: any, i: number) => ({ id: x.id || `v-${i}`, label: x.companyName ? `${x.brand || ''} ${x.licensePlate || ''}`.trim() : (x.name || `${x.brand || ''} ${x.licensePlate || ''}`).trim() })));
-      }
-      // Prefill userId from JWT token
-      try {
-        const token = getCookie('access_token');
-        if (token) {
-          const decoded = jwtDecode<any>(token);
-          const uid = decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
-          if (uid) form.userId = String(uid);
+      // Resolve user and role/company
+      let isAdmin = false;
+      let userCompanyId: string | null = null;
+      const uid = getUserIdFromToken();
+      if (uid) {
+        form.userId = String(uid);
+        try {
+          const uRes = await fetchWithAuth(`${API_URL}/Users/${uid}`);
+          if (uRes.ok) {
+            const u = await uRes.json();
+            isAdmin = Number(u?.roleId) === 1;
+            if (u?.companyId) userCompanyId = String(u.companyId);
+          }
+        } catch (e) {
+          console.error('Failed to fetch current user for create-booking filtering', e);
         }
-      } catch {}
+      }
+
+      // Load vehicles
+      const vRes = await fetchWithAuth(`${API_URL}/Vehicles`);
+      if (vRes.ok) {
+        let v = await vRes.json();
+        if (!isAdmin && userCompanyId && Array.isArray(v)) {
+          v = v.filter((x: any) => String(x?.companyId ?? x?.company?.id ?? '') === userCompanyId);
+        }
+        const options = (Array.isArray(v) ? v : []).map((x: any, i: number) => {
+          const plate = String(x?.licensePlate ?? x?.license_plate ?? x?.plate ?? '').trim();
+          return { id: x.id || `v-${i}`, label: plate || (x?.name ? String(x.name) : `Vehicle ${x.id || i + 1}`) };
+        });
+        vehicles.splice(0, vehicles.length, ...options);
+        // If current selection is not in filtered options, clear it
+        if (form.vehicleId && !options.some(o => String(o.id) === String(form.vehicleId))) {
+          form.vehicleId = '';
+        }
+      }
     } catch (e) {
       console.error('Failed to load options', e);
     } finally {

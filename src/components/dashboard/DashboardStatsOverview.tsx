@@ -1,5 +1,5 @@
 import { component$, useVisibleTask$, useSignal, useStore } from '@builder.io/qwik';
-import { fetchWithAuth } from '../../utils/api';
+import { fetchWithAuth, getUserIdFromToken } from '../../utils/api';
 
 export const DashboardStatsOverview = component$(() => {
   const chartLoaded = useSignal(false);
@@ -75,6 +75,23 @@ export const DashboardStatsOverview = component$(() => {
       countsLoading.value = true;
       countsError.value = null;
 
+      // Resolve current user for company-scoped counts (non-admin)
+      let isAdmin = false;
+      let userCompanyId: string | null = null;
+      try {
+        const uid = getUserIdFromToken();
+        if (uid) {
+          const uRes = await fetchWithAuth(`${API_URL}/Users/${uid}`);
+          if (uRes.ok) {
+            const u = await uRes.json();
+            isAdmin = Number(u?.roleId) === 1;
+            if (u?.companyId) userCompanyId = String(u.companyId);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to resolve user for dashboard counts', e);
+      }
+
       const [usersRes, companiesRes, vehiclesRes] = await Promise.all([
         fetchWithAuth(`${API_URL}/Users`).catch(() => undefined as unknown as Response),
         fetchWithAuth(`${API_URL}/Companies`).catch(() => undefined as unknown as Response),
@@ -101,12 +118,53 @@ export const DashboardStatsOverview = component$(() => {
         }
       }
 
-      const [usersCount, companiesCount, vehiclesCount, bookingsCount] = await Promise.all([
+      let [usersCount, companiesCount, vehiclesCount, bookingsCount] = await Promise.all([
         toCount(usersRes),
         toCount(companiesRes),
         toCount(vehiclesRes),
         toCount(bookingsRes),
       ]);
+
+      // Scope counts to user's company for non-admins
+      if (!isAdmin && userCompanyId) {
+        try {
+          // Vehicles in company
+          if (vehiclesRes && vehiclesRes.ok) {
+            const v = await vehiclesRes.json().catch(() => []);
+            if (Array.isArray(v)) {
+              vehiclesCount = v.filter((x: any) => String(x?.companyId ?? x?.company?.id ?? '') === userCompanyId).length;
+            }
+          }
+          // Users in company
+          if (usersRes && usersRes.ok) {
+            const u = await usersRes.json().catch(() => []);
+            if (Array.isArray(u)) {
+              usersCount = u.filter((x: any) => String(x?.companyId ?? '') === userCompanyId).length;
+            }
+          }
+          // Companies: show 1 (their company) if exists
+          companiesCount = 1;
+          // Bookings limited to vehicles in company
+          if (bookingsRes && bookingsRes.ok) {
+            const [bookingsData, vehiclesData] = await Promise.all([
+              bookingsRes.json().catch(() => []),
+              vehiclesRes && vehiclesRes.ok ? vehiclesRes.json().catch(() => []) : Promise.resolve([]),
+            ]);
+            const allowedIds = new Set(
+              (Array.isArray(vehiclesData) ? vehiclesData : [])
+                .filter((x: any) => String(x?.companyId ?? x?.company?.id ?? '') === userCompanyId)
+                .map((x: any) => String(x?.id))
+            );
+            const normalized = Array.isArray(bookingsData) ? bookingsData : [];
+            bookingsCount = normalized.filter((b: any, i: number) => {
+              const bid = String(b?.vehicleId ?? b?.vehicle?.id ?? '');
+              return allowedIds.has(bid);
+            }).length;
+          }
+        } catch (e) {
+          console.error('Failed to scope dashboard counts', e);
+        }
+      }
 
       counts.users = usersCount;
       counts.companies = companiesCount;

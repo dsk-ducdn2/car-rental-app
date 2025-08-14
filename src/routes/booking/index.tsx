@@ -1,7 +1,7 @@
 import { component$, useStore, useVisibleTask$, useSignal, useComputed$, $ } from '@builder.io/qwik';
 import { Sidebar } from '../../components/dashboard/Slidebar';
 import { DashboardHeader } from '../../components/dashboard/DashboardHeader';
-import { fetchWithAuth } from '../../utils/api';
+import { fetchWithAuth, getUserIdFromToken } from '../../utils/api';
 
 interface BookingApiShape {
   id?: string;
@@ -40,7 +40,14 @@ interface Booking {
 const toBooking = (row: BookingApiShape, index: number): Booking => {
   const id = row.id || row.bookingId || `booking-${index}`;
   const vehicleId = row.vehicleId || row.vehicle?.id || '';
-  const vehicleName = row.vehicleName || row.vehicle?.name || [row.vehicle?.brand, row.vehicle?.licensePlate].filter(Boolean).join(' ') || 'N/A';
+  // Show license plate only for vehicle label
+  const plate =
+    row.vehicle?.licensePlate ||
+    (row as any)?.licensePlate ||
+    (row.vehicle as any)?.license_plate ||
+    (row as any)?.license_plate ||
+    '';
+  const vehicleName = String(plate).trim() || row.vehicleName || row.vehicle?.name || 'N/A';
   const userId = row.userId || row.user?.id || '';
   const userEmail = row.userEmail || row.user?.email || row.user?.gmail || 'N/A';
   const start =
@@ -133,6 +140,23 @@ export default component$(() => {
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async () => {
     try {
+      // Resolve current user's role/company for filtering
+      let isAdmin = false;
+      let userCompanyId: string | null = null;
+      try {
+        const uid = getUserIdFromToken();
+        if (uid) {
+          const uRes = await fetchWithAuth(`${API_URL}/Users/${uid}`);
+          if (uRes.ok) {
+            const u = await uRes.json();
+            isAdmin = Number(u?.roleId) === 1;
+            if (u?.companyId) userCompanyId = String(u.companyId);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to resolve user for booking filtering', e);
+      }
+
       // Try plural then singular
       let res = await fetchWithAuth(`${API_URL}/Booking`).catch(() => undefined as unknown as Response);
       if (!res || !res.ok) {
@@ -140,7 +164,27 @@ export default component$(() => {
       }
       if (res && res.ok) {
         const data = await res.json();
-        store.bookings = transformBookings(data);
+        let bookings = transformBookings(data);
+
+        // If not admin, restrict bookings to vehicles that belong to user's company
+        if (!isAdmin && userCompanyId) {
+          try {
+            const vRes = await fetchWithAuth(`${API_URL}/Vehicles`);
+            if (vRes.ok) {
+              const vehicles = await vRes.json();
+              const allowedVehicleIds = new Set(
+                (Array.isArray(vehicles) ? vehicles : [])
+                  .filter((v: any) => String(v?.companyId ?? v?.company?.id ?? '') === userCompanyId)
+                  .map((v: any) => String(v?.id))
+              );
+              bookings = bookings.filter((b) => allowedVehicleIds.has(String(b.vehicleId)));
+            }
+          } catch (e) {
+            console.error('Failed to filter bookings by company', e);
+          }
+        }
+
+        store.bookings = bookings;
       } else {
         store.bookings = [];
       }
@@ -246,7 +290,7 @@ export default component$(() => {
                   <table class="min-w-full bg-white rounded-lg">
                     <thead>
                       <tr class="text-left text-xs text-gray-500 uppercase border-b border-gray-200">
-                        <th class="py-3 px-6">Vehicle Name</th>
+                        <th class="py-3 px-6">License Plate</th>
                         <th class="py-3 px-6">User Gmail</th>
                         <th class="py-3 px-6">Start</th>
                         <th class="py-3 px-6">End</th>
