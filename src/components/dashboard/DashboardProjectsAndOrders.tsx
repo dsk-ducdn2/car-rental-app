@@ -46,72 +46,43 @@ const transformMaintenanceData = (schedules: any[]): MaintenanceSchedule[] => {
   });
 };
 
-const orders = [
-  {
-    icon: (
-      <span class="bg-green-100 text-green-600 rounded-full p-2 mr-2">
-        <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.2l-3.5-3.5 1.4-1.4L9 13.4l7.1-7.1 1.4 1.4z"/></svg>
-      </span>
-    ),
-    text: '$2400, DESIGN CHANGES',
-    date: '22 DEC 7:20 PM',
-    color: 'text-green-600',
-  },
-  {
-    icon: (
-      <span class="bg-red-100 text-red-600 rounded-full p-2 mr-2">
-        <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M19 13H5v-2h14v2z"/></svg>
-      </span>
-    ),
-    text: 'NEW ORDER #1832412',
-    date: '21 DEC 11 PM',
-    color: 'text-red-600',
-  },
-  {
-    icon: (
-      <span class="bg-blue-100 text-blue-600 rounded-full p-2 mr-2">
-        <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 8h14v-2H7v2zm0-4h14v-2H7v2zm0-6v2h14V7H7z"/></svg>
-      </span>
-    ),
-    text: 'SERVER PAYMENTS FOR APRIL',
-    date: '21 DEC 9:34 PM',
-    color: 'text-blue-600',
-  },
-  {
-    icon: (
-      <span class="bg-orange-100 text-orange-500 rounded-full p-2 mr-2">
-        <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M21 7l-1 2H4L3 7h18zm-2.38 4l-1.24 6.45A2 2 0 0115.42 19H8.58a2 2 0 01-1.96-1.55L5.38 11h13.24z"/></svg>
-      </span>
-    ),
-    text: 'NEW CARD ADDED FOR ORDER #4395133',
-    date: '20 DEC 2:20 AM',
-    color: 'text-orange-500',
-  },
-  {
-    icon: (
-      <span class="bg-purple-100 text-purple-600 rounded-full p-2 mr-2">
-        <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-      </span>
-    ),
-    text: 'NEW CARD ADDED FOR ORDER #4395133',
-    date: '18 DEC 4:54 AM',
-    color: 'text-purple-600',
-  },
-  {
-    icon: (
-      <span class="bg-gray-200 text-gray-700 rounded-full p-2 mr-2">
-        <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M12 17c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm0-14C6.48 3 2 7.48 2 13s4.48 10 10 10 10-4.48 10-10S17.52 3 12 3z"/></svg>
-      </span>
-    ),
-    text: 'NEW ORDER #9583120',
-    date: '17 DEC',
-    color: 'text-gray-700',
-  },
-];
+interface BookingApiShape {
+  id?: string;
+  bookingId?: string;
+  vehicleId?: string;
+  vehicle?: { id?: string } | null;
+  startDateTime?: string;
+  start_datetime?: string;
+  startDatetime?: string;
+  startDate?: string;
+  endDateTime?: string;
+  end_datetime?: string;
+  endDatetime?: string;
+  endDate?: string;
+  totalPrice?: number;
+  total_price?: number;
+  price?: number;
+}
+
+interface TopVehicleRevenue {
+  vehicleId: string;
+  vehicleName: string;
+  revenue: number;
+}
+
+const startOfMonth = (y: number, m: number) => new Date(y, m, 1, 0, 0, 0, 0);
+const endOfMonth = (y: number, m: number) => new Date(y, m + 1, 0, 23, 59, 59, 999);
+
+const normalizeMoney = (row: BookingApiShape): number => {
+  if (typeof row.totalPrice === 'number') return row.totalPrice;
+  if (typeof row.total_price === 'number') return row.total_price;
+  if (typeof row.price === 'number') return row.price;
+  return 0;
+};
 
 export const DashboardProjectsAndOrders = component$(() => {
   const apiUrl = import.meta.env.VITE_API_URL;
-  const store = useStore<{ items: MaintenanceSchedule[]; loading: boolean }>({ items: [], loading: true });
+  const store = useStore<{ items: MaintenanceSchedule[]; loading: boolean; topVehicles: TopVehicleRevenue[]; topLoading: boolean }>({ items: [], loading: true, topVehicles: [], topLoading: true });
 
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async () => {
@@ -119,6 +90,7 @@ export const DashboardProjectsAndOrders = component$(() => {
       // Resolve current user/company to filter maintenance for non-admin users
       let isAdmin = false;
       let userCompanyId: string | null = null;
+      let allowedVehicleIds: Set<string> | null = null;
       try {
         const uid = getUserIdFromToken();
         if (uid) {
@@ -131,25 +103,26 @@ export const DashboardProjectsAndOrders = component$(() => {
         }
       } catch {}
 
-      const [maintRes, vehiclesRes] = await Promise.all([
+      const [maintRes, vehiclesRes, bookingsRes] = await Promise.all([
         fetchWithAuth(`${apiUrl}/Maintenance`),
         fetchWithAuth(`${apiUrl}/Vehicles`).catch(() => undefined as unknown as Response),
+        fetchWithAuth(`${apiUrl}/Booking`).catch(() => undefined as unknown as Response),
       ]);
       const data = await maintRes.json();
       let all = transformMaintenanceData(data);
 
       // If user is not admin, restrict to maintenance for vehicles in user's company
+      let vehicles: any[] = [];
+      if (vehiclesRes && vehiclesRes.ok) {
+        vehicles = await vehiclesRes.json().catch(() => []);
+      }
       if (!isAdmin && userCompanyId) {
-        let vehicles: any[] = [];
-        if (vehiclesRes && vehiclesRes.ok) {
-          vehicles = await vehiclesRes.json().catch(() => []);
-        }
-        const allowedIds = new Set(
+        allowedVehicleIds = new Set(
           (Array.isArray(vehicles) ? vehicles : [])
             .filter((v: any) => String(v?.companyId ?? v?.company?.id ?? '') === userCompanyId)
             .map((v: any) => String(v?.id))
         );
-        all = all.filter((m) => allowedIds.has(String(m.vehicleId)));
+        all = all.filter((m) => allowedVehicleIds!.has(String(m.vehicleId)));
       }
 
       const today = new Date();
@@ -163,6 +136,61 @@ export const DashboardProjectsAndOrders = component$(() => {
         d.setHours(0, 0, 0, 0);
         return d >= today && d <= in3Days && (s.status === 'SCHEDULED' || s.status === 'IN_PROGRESS');
       });
+
+      // Compute top 5 vehicles by revenue for the current month
+      try {
+        const topByVehicle: Record<string, number> = {};
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = now.getMonth();
+        const monthStart = startOfMonth(y, m);
+        const monthEnd = endOfMonth(y, m);
+        const dayMs = 24 * 60 * 60 * 1000;
+
+        const rows: BookingApiShape[] = bookingsRes && bookingsRes.ok ? await bookingsRes.json().catch(() => []) : [];
+        for (let i = 0; i < rows.length; i++) {
+          const r = rows[i];
+          const vehicleId = String(r.vehicleId || r.vehicle?.id || '');
+          if (!vehicleId) continue;
+          if (allowedVehicleIds && !allowedVehicleIds.has(vehicleId)) continue;
+          const total = normalizeMoney(r);
+          const sRaw = new Date(r.startDateTime || r.start_datetime || r.startDatetime || r.startDate || '');
+          const eRaw = new Date(r.endDateTime || r.end_datetime || r.endDatetime || r.endDate || '');
+          if (isNaN(sRaw.getTime()) && isNaN(eRaw.getTime())) continue;
+          const s0 = isNaN(sRaw.getTime()) ? eRaw : sRaw;
+          const e0 = isNaN(eRaw.getTime()) ? sRaw : eRaw;
+          const s = new Date(Math.min(s0.getTime(), e0.getTime()));
+          const e = new Date(Math.max(s0.getTime(), e0.getTime()));
+          const realStart = new Date(s.getFullYear(), s.getMonth(), s.getDate(), 0, 0, 0, 0);
+          const realEnd = new Date(e.getFullYear(), e.getMonth(), e.getDate(), 23, 59, 59, 999);
+          const totalMs = Math.max(realEnd.getTime() - realStart.getTime(), dayMs);
+          const clipStart = realStart < monthStart ? monthStart : realStart;
+          const clipEnd = realEnd > monthEnd ? monthEnd : realEnd;
+          if (clipEnd < clipStart) continue;
+          const overlapMs = clipEnd.getTime() - clipStart.getTime();
+          const fraction = overlapMs > 0 ? overlapMs / totalMs : 0;
+          topByVehicle[vehicleId] = (topByVehicle[vehicleId] || 0) + total * fraction;
+        }
+
+        // Map to names and sort
+        const idToName = new Map<string, string>();
+        (Array.isArray(vehicles) ? vehicles : []).forEach((v: any) => {
+          const brand = v?.brand || '';
+          const license = v?.licensePlate || v?.license_plate || '';
+          const name = `${brand} ${license}`.trim() || license || brand || 'Vehicle';
+          idToName.set(String(v?.id), name);
+        });
+
+        const list: TopVehicleRevenue[] = Object.entries(topByVehicle)
+          .map(([vehicleId, revenue]) => ({ vehicleId, revenue, vehicleName: idToName.get(vehicleId) || vehicleId }))
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 5);
+        store.topVehicles = list;
+      } catch {
+        store.topVehicles = [];
+      } finally {
+        store.topLoading = false;
+      }
     } catch (err) {
       store.items = [];
     } finally {
@@ -211,19 +239,36 @@ export const DashboardProjectsAndOrders = component$(() => {
         </div>
       </div>
       <div class="bg-white rounded-2xl shadow p-4 md:p-8 w-full lg:w-96 min-h-[400px] mt-2 lg:mt-0">
-        <div class="font-bold mb-2">Orders overview</div>
-        <div class="text-green-500 text-sm font-semibold mb-4">↑ 24% <span class="text-gray-400 font-normal">THIS MONTH</span></div>
-        <ul class="space-y-4">
-          {orders.map((o, index) => (
-            <li key={index} class="flex items-start gap-2">
-              <div>{o.icon}</div>
-              <div>
-                <div class={`font-semibold text-sm ${o.color}`}>{o.text}</div>
-                <div class="text-xs text-gray-400">{o.date}</div>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <div class="font-bold mb-2">Top Vehicles by Revenue</div>
+        <div class="text-green-500 text-sm font-semibold mb-4">↑ Top 5 <span class="text-gray-400 font-normal">THIS MONTH</span></div>
+        {store.topLoading ? (
+          <ul class="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <li key={i} class="flex items-center gap-3">
+                <div class="w-2 h-8 bg-gray-200 rounded"></div>
+                <div class="flex-1">
+                  <div class="h-4 w-40 bg-gray-200 rounded mb-1"></div>
+                  <div class="h-3 w-24 bg-gray-200 rounded"></div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <ul class="space-y-4">
+            {store.topVehicles.length === 0 && (
+              <li class="text-gray-400 text-sm">No data for this month.</li>
+            )}
+            {store.topVehicles.map((v) => (
+              <li key={v.vehicleId} class="flex items-start gap-3">
+                <div class="w-1.5 mt-1.5 h-6 rounded bg-blue-500"></div>
+                <div class="flex-1">
+                  <div class="font-semibold text-sm text-gray-800">{v.vehicleName}</div>
+                  <div class="text-xs text-gray-500">{v.revenue.toLocaleString()} VND</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

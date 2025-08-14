@@ -1,6 +1,98 @@
 import { component$, useVisibleTask$, useSignal, useStore } from '@builder.io/qwik';
 import { fetchWithAuth, getUserIdFromToken } from '../../utils/api';
 
+interface BookingApiShape {
+  id?: string;
+  bookingId?: string;
+  vehicleId?: string;
+  vehicle?: { id?: string } | null;
+  startDateTime?: string;
+  start_datetime?: string;
+  startDatetime?: string;
+  startDate?: string;
+  endDateTime?: string;
+  end_datetime?: string;
+  endDatetime?: string;
+  endDate?: string;
+  totalPrice?: number;
+  total_price?: number;
+  price?: number;
+}
+
+interface BookingRow {
+  id: string;
+  vehicleId: string;
+  startIso: string;
+  endIso: string;
+  totalPrice: number;
+}
+
+const toBooking = (row: BookingApiShape, index: number): BookingRow => {
+  const id = row.id || row.bookingId || `booking-${index}`;
+  const vehicleId = row.vehicleId || row.vehicle?.id || '';
+  const start = row.startDateTime || row.start_datetime || row.startDatetime || row.startDate || '';
+  const end = row.endDateTime || row.end_datetime || row.endDatetime || row.endDate || '';
+  const total = typeof row.totalPrice === 'number'
+    ? row.totalPrice
+    : (typeof row.total_price === 'number'
+      ? row.total_price
+      : (typeof row.price === 'number' ? row.price : 0));
+  return {
+    id: String(id),
+    vehicleId: String(vehicleId),
+    startIso: start,
+    endIso: end,
+    totalPrice: Number(total) || 0,
+  };
+};
+
+const aggregateMonthlyRevenue = (rows: BookingRow[], year: number): number[] => {
+  const months = Array.from({ length: 12 }, () => 0);
+  const dayMs = 24 * 60 * 60 * 1000;
+
+  const startOfDay = (d: Date): Date => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+  const endOfDay = (d: Date): Date => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+  const endOfMonth = (d: Date): Date => new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+
+  const yearStart = new Date(year, 0, 1, 0, 0, 0, 0);
+  const yearEnd = new Date(year, 11, 31, 23, 59, 59, 999);
+
+  for (const b of rows) {
+    const startRaw = new Date(b.startIso || '');
+    const endRaw = new Date(b.endIso || '');
+    if (isNaN(startRaw.getTime()) && isNaN(endRaw.getTime())) continue;
+    const s0 = isNaN(startRaw.getTime()) ? endRaw : startRaw;
+    const e0 = isNaN(endRaw.getTime()) ? startRaw : endRaw;
+    const start = s0 < e0 ? s0 : e0;
+    const end = s0 < e0 ? e0 : s0;
+
+    // Inclusive both edges: use start-of-day and end-of-day
+    const realStart = startOfDay(start);
+    const realEnd = endOfDay(end);
+
+    let totalMs = realEnd.getTime() - realStart.getTime();
+    if (totalMs <= 0) totalMs = dayMs; // at least one day
+
+    // Clip to the target year (still inclusive)
+    const clipStart = realStart < yearStart ? yearStart : realStart;
+    const clipEnd = realEnd > yearEnd ? yearEnd : realEnd;
+    if (clipEnd < clipStart) continue;
+
+    let cursor = new Date(clipStart);
+    while (cursor <= clipEnd) {
+      const mEnd = endOfMonth(cursor);
+      const segmentEnd = mEnd < clipEnd ? mEnd : clipEnd;
+      const segmentMs = segmentEnd.getTime() - cursor.getTime();
+      const fraction = segmentMs > 0 ? segmentMs / totalMs : 0;
+      months[cursor.getMonth()] += (Number(b.totalPrice) || 0) * fraction;
+      // move to next day start after segmentEnd (keeps inclusivity without double-count)
+      const next = new Date(segmentEnd.getTime() + 1);
+      cursor = startOfDay(next);
+    }
+  }
+  return months;
+};
+
 export const DashboardStatsOverview = component$(() => {
   const chartLoaded = useSignal(false);
   const roleIsAdmin = useSignal<boolean>(false);
@@ -10,53 +102,7 @@ export const DashboardStatsOverview = component$(() => {
   const countsLoading = useSignal(true);
   const countsError = useSignal<string | null>(null);
 
-  // eslint-disable-next-line qwik/no-use-visible-task
-  useVisibleTask$(() => {
-    // Dynamic import Chart.js để chỉ chạy phía client
-    import('chart.js/auto').then((Chart) => {
-      const ctx = document.getElementById('salesChart') as HTMLCanvasElement;
-      if (ctx) {
-        new Chart.default(ctx, {
-          type: 'line',
-          data: {
-            labels: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-            datasets: [
-              {
-                label: 'Mobile apps',
-                data: [10, 100, 200, 150, 220, 250, 200, 220, 250],
-                borderColor: '#00bcd4',
-                backgroundColor: 'rgba(0,188,212,0.1)',
-                fill: true,
-                tension: 0.4,
-                pointRadius: 4,
-              },
-              {
-                label: 'Websites',
-                data: [20, 80, 120, 180, 200, 210, 250, 230, 240],
-                borderColor: '#21294c',
-                backgroundColor: 'rgba(33,41,76,0.1)',
-                fill: false,
-                tension: 0.4,
-                pointRadius: 4,
-              },
-            ],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: { enabled: true },
-            },
-            scales: {
-              y: { beginAtZero: true },
-            },
-          },
-        });
-        chartLoaded.value = true;
-      }
-    });
-  });
+  // We will create the chart after we fetch and aggregate bookings data
 
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async () => {
@@ -139,6 +185,80 @@ export const DashboardStatsOverview = component$(() => {
       counts.companies = companiesCount;
       counts.vehicles = vehiclesCount;
       counts.bookings = bookingsCount;
+
+      // Build revenue datasets by month for current and previous year
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const previousYear = currentYear - 1;
+
+      let bookings: BookingRow[] = Array.isArray(bookingsData)
+        ? (bookingsData as BookingApiShape[]).map(toBooking)
+        : [];
+
+      if (!isAdmin && userCompanyId) {
+        const allowedIds = new Set(
+          (Array.isArray(vehiclesData) ? vehiclesData : [])
+            .filter((x: any) => String(x?.companyId ?? x?.company?.id ?? '') === userCompanyId)
+            .map((x: any) => String(x?.id))
+        );
+        bookings = bookings.filter((b) => allowedIds.has(String(b.vehicleId)));
+      }
+
+      const revenueCurrent = aggregateMonthlyRevenue(bookings, currentYear);
+      const revenuePrevious = aggregateMonthlyRevenue(bookings, previousYear);
+
+      // Create chart after data is available (client only)
+      const Chart = await import('chart.js/auto');
+      const ctx = document.getElementById('salesChart') as HTMLCanvasElement | null;
+      if (ctx) {
+        // eslint-disable-next-line no-new
+        new Chart.default(ctx, {
+          type: 'line',
+          data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [
+              {
+                label: `Current Year (${currentYear})`,
+                data: revenueCurrent,
+                borderColor: '#00bcd4',
+                backgroundColor: 'rgba(0,188,212,0.12)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 3,
+              },
+              {
+                label: `Previous Year (${previousYear})`,
+                data: revenuePrevious,
+                borderColor: '#6b5b95',
+                backgroundColor: 'rgba(107,91,149,0.08)',
+                fill: false,
+                tension: 0.4,
+                pointRadius: 3,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                enabled: true,
+                callbacks: {
+                  label: (ctx) => {
+                    const v = ctx.parsed.y || 0;
+                    return `${ctx.dataset.label}: ${v.toLocaleString()}`;
+                  },
+                },
+              },
+            },
+            scales: {
+              y: { beginAtZero: true },
+            },
+          },
+        });
+        chartLoaded.value = true;
+      }
 
     } catch (err) {
       console.error('Failed to load counts', err);
