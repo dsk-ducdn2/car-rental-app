@@ -46,6 +46,16 @@ export default component$((props: { vehicle: Vehicle }) => {
   const toastState = useStore({ visible: false });
   const companies = useSignal<Company[]>([]);
   const companiesLoading = useSignal(true);
+  const isAdmin = useSignal<boolean>(false);
+  const currentUserEmail = useSignal<string>('');
+  const currentUser = useStore({
+    id: '',
+    name: '',
+    email: '',
+    phone: '',
+    roleId: 0,
+    companyId: ''
+  });
 
   const formErrors = useStore({
     companyId: '',
@@ -62,13 +72,39 @@ export default component$((props: { vehicle: Vehicle }) => {
     serverError: '',
   });
 
-  // Fetch companies for dropdown
+  // Fetch companies for dropdown and current user role/company
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async () => {
     try {
       const res = await fetchWithAuth(`${API_URL}/Companies`);
       const data = await res.json();
       companies.value = Array.isArray(data) ? data : [];
+
+      // Determine current user's role and default company
+      try {
+        const uid = getUserIdFromToken();
+        if (uid) {
+          const uRes = await fetchWithAuth(`${API_URL}/Users/${uid}`);
+          if (uRes.ok) {
+            const u = await uRes.json();
+            isAdmin.value = Number(u?.roleId) === 1;
+            if (!isAdmin.value && u?.companyId && !companyId.value) {
+              companyId.value = String(u.companyId);
+            }
+            currentUserEmail.value = String(u?.email || '');
+            // cache current user for potential update
+            currentUser.id = String(u?.id ?? '');
+            currentUser.name = String(u?.name || '');
+            currentUser.email = String(u?.email || '');
+            currentUser.phone = String(u?.phone || '');
+            currentUser.roleId = Number(u?.roleId || 0);
+            currentUser.companyId = String(u?.companyId || '');
+          }
+        }
+      } catch (e) {
+        // If we can't resolve role/company, leave defaults (selector remains enabled)
+        console.error('Failed to resolve current user role/company', e);
+      }
     } catch (error) {
       console.error('Failed to fetch companies:', error);
       companies.value = [];
@@ -92,7 +128,8 @@ export default component$((props: { vehicle: Vehicle }) => {
     // Client-side validation
     let hasError = false;
 
-    if (!companyId.value.trim()) {
+    // Require company for update; for create we'll auto-create a Personal company if missing
+    if (isUpdate && !companyId.value.trim()) {
       formErrors.companyId = 'Please select a company';
       hasError = true;
     }
@@ -163,6 +200,61 @@ export default component$((props: { vehicle: Vehicle }) => {
     
     // Get UserId from token
     const userId = getUserIdFromToken();
+    
+    // Auto-create a Personal company when creating, user is not admin, and company not selected
+    if (!isUpdate && !isAdmin.value && !companyId.value.trim()) {
+      try {
+        const cRes = await fetchWithAuth(`${API_URL}/Companies`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: 'Personal',
+            address: '',
+            phone: '0000000000',
+            email: currentUserEmail.value || 'personal@example.com',
+          }),
+        });
+        if (cRes.ok) {
+          const c = await cRes.json();
+          const created = c?.company ?? c?.data ?? c;
+          const newId = String(created?.id ?? created?.companyId ?? '');
+          if (newId) {
+            companyId.value = newId;
+            // Update the current user's companyId to the newly created Personal company
+            if (userId) {
+              const updateBody = {
+                name: currentUser.name || currentUser.email || (currentUserEmail.value?.split?.('@')?.[0] || ''),
+                email: currentUser.email || currentUserEmail.value,
+                phone: currentUser.phone || '',
+                companyId: newId,
+              } as any;
+              const uRes = await fetchWithAuth(`${API_URL}/Users/${userId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updateBody),
+              });
+              if (!uRes.ok) {
+                const errText = await uRes.text();
+                formState.serverError = errText || 'Failed to update your profile with new company.';
+                return;
+              }
+              currentUser.companyId = newId;
+            }
+          } else {
+            formState.serverError = 'Failed to resolve new company id.';
+            return;
+          }
+        } else {
+          const errText = await cRes.text();
+          formState.serverError = errText || 'Failed to auto-create Personal company.';
+          return;
+        }
+      } catch (e) {
+        console.error('Create Personal company failed', e);
+        formState.serverError = 'Failed to auto-create Personal company.';
+        return;
+      }
+    }
     
     const body: any = {
       companyId: companyId.value,
@@ -239,7 +331,8 @@ export default component$((props: { vehicle: Vehicle }) => {
               <select
                 value={companyId.value}
                 onChange$={(e) => (companyId.value = (e.target as HTMLSelectElement).value)}
-                class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                class={`w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 ${!isAdmin.value ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                disabled={!isAdmin.value}
               >
                 <option value="">Select a company</option>
                 {companies.value.map((company) => (

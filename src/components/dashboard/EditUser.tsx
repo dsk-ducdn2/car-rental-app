@@ -132,7 +132,7 @@ export default component$((props: { user: Author }) => {
       name: name.value,
       email: email.value,
       phone: phoneNumber.value,
-      companyId: selectedCompany.value ?? null,
+      ...(!isEditingSelf.value ? { companyId: selectedCompany.value ?? null } : {}),
       ...(needsPasswordField.value ? { password: password.value } : {}),
       ...(!isEditingSelf.value && selectedRole.value
         ? { roleId: Number(selectedRole.value) }
@@ -251,30 +251,32 @@ export default component$((props: { user: Author }) => {
           </div>
         )}
 
-        <div>
-          <label class="block text-sm font-semibold mb-1 text-gray-700">Company</label>
-          {loadingCompanies.value && <div>Loading companies...</div>}
-          {errorCompanies.value && (
-            <div class="text-red-500">Failed to load companies</div>
-          )}
-          {!loadingCompanies.value && !errorCompanies.value && (
-            <select
-              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              value={selectedCompany.value || ''}
-              onChange$={(e) => {
-                const value = (e.target as HTMLSelectElement).value;
-                selectedCompany.value = value || null;
-              }}
-            >
-              <option value="">-- Select Company --</option>
-              {companies.value.map((company) => (
-                <option key={company.id} value={String(company.id)}>
-                  {company.name}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
+        {!isEditingSelf.value && (
+          <div>
+            <label class="block text-sm font-semibold mb-1 text-gray-700">Company</label>
+            {loadingCompanies.value && <div>Loading companies...</div>}
+            {errorCompanies.value && (
+              <div class="text-red-500">Failed to load companies</div>
+            )}
+            {!loadingCompanies.value && !errorCompanies.value && (
+              <select
+                class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                value={selectedCompany.value || ''}
+                onChange$={(e) => {
+                  const value = (e.target as HTMLSelectElement).value;
+                  selectedCompany.value = value || null;
+                }}
+              >
+                <option value="">-- Select Company --</option>
+                {companies.value.map((company) => (
+                  <option key={company.id} value={String(company.id)}>
+                    {company.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
 
         {!isEditingSelf.value && (
           <div>
