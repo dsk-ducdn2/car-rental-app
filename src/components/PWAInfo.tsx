@@ -38,19 +38,19 @@ export const PWAInfo = component$(() => {
   return (
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-        Trạng thái PWA
+        PWA Status
       </h3>
       
       <div class="space-y-3">
         <div class="flex items-center justify-between">
-          <span class="text-sm text-gray-600 dark:text-gray-300">Cài đặt:</span>
+          <span class="text-sm text-gray-600 dark:text-gray-300">Installed:</span>
           <span class={`text-sm font-medium ${isInstalled.value ? 'text-green-600' : 'text-yellow-600'}`}>
-            {isInstalled.value ? 'Đã cài đặt' : 'Chưa cài đặt'}
+            {isInstalled.value ? 'Installed' : 'Not installed'}
           </span>
         </div>
         
         <div class="flex items-center justify-between">
-          <span class="text-sm text-gray-600 dark:text-gray-300">Kết nối:</span>
+          <span class="text-sm text-gray-600 dark:text-gray-300">Connection:</span>
           <span class={`text-sm font-medium ${isOnline.value ? 'text-green-600' : 'text-red-600'}`}>
             {isOnline.value ? 'Online' : 'Offline'}
           </span>
@@ -59,7 +59,7 @@ export const PWAInfo = component$(() => {
         <div class="flex items-center justify-between">
           <span class="text-sm text-gray-600 dark:text-gray-300">Service Worker:</span>
           <span class="text-sm font-medium text-green-600">
-            Hoạt động
+            Active
           </span>
         </div>
       </div>
@@ -67,7 +67,7 @@ export const PWAInfo = component$(() => {
       {!isInstalled.value && (
         <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
           <p class="text-sm text-blue-700 dark:text-blue-300">
-            💡 Bạn có thể cài đặt ứng dụng này để sử dụng offline và truy cập nhanh hơn.
+            💡 You can install this app to use it offline and access it faster.
           </p>
         </div>
       )}
