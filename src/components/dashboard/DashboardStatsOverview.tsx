@@ -3,6 +3,7 @@ import { fetchWithAuth, getUserIdFromToken } from '../../utils/api';
 
 export const DashboardStatsOverview = component$(() => {
   const chartLoaded = useSignal(false);
+  const roleIsAdmin = useSignal<boolean>(false);
 
   // Stats counts
   const counts = useStore({ users: 0, companies: 0, vehicles: 0, bookings: 0 });
@@ -61,16 +62,6 @@ export const DashboardStatsOverview = component$(() => {
   useVisibleTask$(async () => {
     const API_URL = import.meta.env.VITE_API_URL;
 
-    const toCount = async (res: Response | undefined) => {
-      if (!res) return 0;
-      if (!res.ok) return 0;
-      const data = await res.json().catch(() => []);
-      if (Array.isArray(data)) return data.length;
-      if (Array.isArray((data as any)?.items)) return (data as any).items.length;
-      if (typeof (data as any)?.total === 'number') return (data as any).total as number;
-      return 0;
-    };
-
     try {
       countsLoading.value = true;
       countsError.value = null;
@@ -91,85 +82,64 @@ export const DashboardStatsOverview = component$(() => {
       } catch (e) {
         console.error('Failed to resolve user for dashboard counts', e);
       }
+      roleIsAdmin.value = isAdmin;
 
-      const [usersRes, companiesRes, vehiclesRes] = await Promise.all([
+      // Fetch datasets (parse once)
+      const [usersRes, companiesRes, vehiclesRes, bookingsRes, maintenanceRes] = await Promise.all([
         fetchWithAuth(`${API_URL}/Users`).catch(() => undefined as unknown as Response),
         fetchWithAuth(`${API_URL}/Companies`).catch(() => undefined as unknown as Response),
         fetchWithAuth(`${API_URL}/Vehicles`).catch(() => undefined as unknown as Response),
+        fetchWithAuth(`${API_URL}/Booking`).catch(() => undefined as unknown as Response),
+        fetchWithAuth(`${API_URL}/Maintenance`).catch(() => undefined as unknown as Response),
       ]);
 
-      // Bookings: try plural then singular, then fallback to mock data if available
-      let bookingsRes: Response | undefined = undefined;
-      try {
-        bookingsRes = await fetchWithAuth(`${API_URL}/Booking`);
-        if (!bookingsRes.ok) throw new Error('Bookings not ok');
-      } catch (_) {
-        try {
-          const alt = await fetchWithAuth(`${API_URL}/Booking`);
-          bookingsRes = alt.ok ? alt : undefined;
-        } catch {
-          try {
-            // Optional fallback to local mock for dev
-            const mock = await fetch('/mock-data/bookings.json');
-            bookingsRes = mock.ok ? mock : undefined;
-          } catch {
-            bookingsRes = undefined;
-          }
-        }
-      }
+      const usersData: any[] = usersRes && usersRes.ok ? await usersRes.json().catch(() => []) : [];
+      const companiesData: any[] = companiesRes && companiesRes.ok ? await companiesRes.json().catch(() => []) : [];
+      const vehiclesData: any[] = vehiclesRes && vehiclesRes.ok ? await vehiclesRes.json().catch(() => []) : [];
+      const bookingsData: any[] = bookingsRes && bookingsRes.ok ? await bookingsRes.json().catch(() => []) : [];
+      const maintenanceData: any[] = maintenanceRes && maintenanceRes.ok ? await maintenanceRes.json().catch(() => []) : [];
 
-      let [usersCount, companiesCount, vehiclesCount, bookingsCount] = await Promise.all([
-        toCount(usersRes),
-        toCount(companiesRes),
-        toCount(vehiclesRes),
-        toCount(bookingsRes),
-      ]);
+      let usersCount = 0;
+      let companiesCount = 0;
+      let vehiclesCount = 0;
+      let bookingsCount = 0;
 
-      // Scope counts to user's company for non-admins
-      if (!isAdmin && userCompanyId) {
-        try {
-          // Vehicles in company
-          if (vehiclesRes && vehiclesRes.ok) {
-            const v = await vehiclesRes.json().catch(() => []);
-            if (Array.isArray(v)) {
-              vehiclesCount = v.filter((x: any) => String(x?.companyId ?? x?.company?.id ?? '') === userCompanyId).length;
-            }
-          }
-          // Users in company
-          if (usersRes && usersRes.ok) {
-            const u = await usersRes.json().catch(() => []);
-            if (Array.isArray(u)) {
-              usersCount = u.filter((x: any) => String(x?.companyId ?? '') === userCompanyId).length;
-            }
-          }
-          // Companies: show 1 (their company) if exists
-          companiesCount = 1;
-          // Bookings limited to vehicles in company
-          if (bookingsRes && bookingsRes.ok) {
-            const [bookingsData, vehiclesData] = await Promise.all([
-              bookingsRes.json().catch(() => []),
-              vehiclesRes && vehiclesRes.ok ? vehiclesRes.json().catch(() => []) : Promise.resolve([]),
-            ]);
-            const allowedIds = new Set(
-              (Array.isArray(vehiclesData) ? vehiclesData : [])
-                .filter((x: any) => String(x?.companyId ?? x?.company?.id ?? '') === userCompanyId)
-                .map((x: any) => String(x?.id))
-            );
-            const normalized = Array.isArray(bookingsData) ? bookingsData : [];
-            bookingsCount = normalized.filter((b: any, i: number) => {
-              const bid = String(b?.vehicleId ?? b?.vehicle?.id ?? '');
-              return allowedIds.has(bid);
-            }).length;
-          }
-        } catch (e) {
-          console.error('Failed to scope dashboard counts', e);
-        }
+      if (isAdmin || !userCompanyId) {
+        usersCount = Array.isArray(usersData) ? usersData.length : 0;
+        companiesCount = Array.isArray(companiesData) ? companiesData.length : 0;
+        vehiclesCount = Array.isArray(vehiclesData) ? vehiclesData.length : 0;
+        bookingsCount = Array.isArray(bookingsData) ? bookingsData.length : 0;
+      } else {
+        const vehiclesInCompany = (Array.isArray(vehiclesData) ? vehiclesData : []).filter(
+          (x: any) => String(x?.companyId ?? x?.company?.id ?? '') === userCompanyId
+        );
+        vehiclesCount = vehiclesInCompany.length;
+
+        usersCount = (Array.isArray(usersData) ? usersData : []).filter(
+          (x: any) => String(x?.companyId ?? '') === userCompanyId
+        ).length;
+
+        // For user: replace company count by maintenance schedules count
+        // Count maintenance items whose vehicle belongs to user's company
+        const allowedIds = new Set(vehiclesInCompany.map((x: any) => String(x?.id)));
+        const maintenanceCount = (Array.isArray(maintenanceData) ? maintenanceData : []).filter((m: any) => {
+          const vid = String(m?.vehicleId ?? m?.vehicle?.id ?? '');
+          return allowedIds.has(vid);
+        }).length;
+        companiesCount = maintenanceCount;
+
+        // Bookings scoped by company vehicles
+        bookingsCount = (Array.isArray(bookingsData) ? bookingsData : []).filter((b: any) => {
+          const vid = String(b?.vehicleId ?? b?.vehicle?.id ?? '');
+          return allowedIds.has(vid);
+        }).length;
       }
 
       counts.users = usersCount;
       counts.companies = companiesCount;
       counts.vehicles = vehiclesCount;
       counts.bookings = bookingsCount;
+
     } catch (err) {
       console.error('Failed to load counts', err);
       countsError.value = 'Failed to load overview stats';
@@ -211,13 +181,13 @@ export const DashboardStatsOverview = component$(() => {
             <div class="h-1 bg-cyan-400 rounded mt-1 w-16"></div>
           </div>
 
-          {/* Companies */}
+          {/* Companies or Maintenance (for non-admin) */}
           <div class="min-w-[80px]">
             <div class="flex items-center gap-2 mb-1 h-[26px]">
               <span class="bg-blue-500 rounded p-1 w-[26px] h-[26px] flex items-center justify-center">
                 <svg width="18" height="18" fill="white" viewBox="0 0 24 24"><path d="M3 13h18v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6zm0-2V5a2 2 0 012-2h4v8H3zm10-8h4a2 2 0 012 2v8h-6V3z"/></svg>
               </span>
-              <span class="text-xs text-gray-500">Companies</span>
+              <span class="text-xs text-gray-500">{roleIsAdmin.value ? 'Companies' : 'Maintenance'}</span>
             </div>
             <div class="text-2xl font-bold h-[32px] flex items-center">
               {countsLoading.value ? (

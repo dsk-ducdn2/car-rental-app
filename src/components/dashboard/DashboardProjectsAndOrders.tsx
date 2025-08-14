@@ -1,5 +1,5 @@
 import { component$, useStore, useVisibleTask$, useComputed$ } from '@builder.io/qwik';
-import { fetchWithAuth } from '../../utils/api';
+import { fetchWithAuth, getUserIdFromToken } from '../../utils/api';
 
 interface MaintenanceSchedule {
   id: string;
@@ -116,9 +116,41 @@ export const DashboardProjectsAndOrders = component$(() => {
   // eslint-disable-next-line qwik/no-use-visible-task
   useVisibleTask$(async () => {
     try {
-      const res = await fetchWithAuth(`${apiUrl}/Maintenance`);
-      const data = await res.json();
-      const all = transformMaintenanceData(data);
+      // Resolve current user/company to filter maintenance for non-admin users
+      let isAdmin = false;
+      let userCompanyId: string | null = null;
+      try {
+        const uid = getUserIdFromToken();
+        if (uid) {
+          const uRes = await fetchWithAuth(`${apiUrl}/Users/${uid}`);
+          if (uRes.ok) {
+            const u = await uRes.json();
+            isAdmin = Number(u?.roleId) === 1;
+            if (u?.companyId) userCompanyId = String(u.companyId);
+          }
+        }
+      } catch {}
+
+      const [maintRes, vehiclesRes] = await Promise.all([
+        fetchWithAuth(`${apiUrl}/Maintenance`),
+        fetchWithAuth(`${apiUrl}/Vehicles`).catch(() => undefined as unknown as Response),
+      ]);
+      const data = await maintRes.json();
+      let all = transformMaintenanceData(data);
+
+      // If user is not admin, restrict to maintenance for vehicles in user's company
+      if (!isAdmin && userCompanyId) {
+        let vehicles: any[] = [];
+        if (vehiclesRes && vehiclesRes.ok) {
+          vehicles = await vehiclesRes.json().catch(() => []);
+        }
+        const allowedIds = new Set(
+          (Array.isArray(vehicles) ? vehicles : [])
+            .filter((v: any) => String(v?.companyId ?? v?.company?.id ?? '') === userCompanyId)
+            .map((v: any) => String(v?.id))
+        );
+        all = all.filter((m) => allowedIds.has(String(m.vehicleId)));
+      }
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -159,7 +191,7 @@ export const DashboardProjectsAndOrders = component$(() => {
             <tbody>
               {!store.loading && !hasItems.value && (
                 <tr>
-                  <td class="py-6 text-center text-gray-400" colSpan={4}>Không có lịch bảo trì trong 3 ngày tới.</td>
+                  <td class="py-6 text-center text-gray-400" colSpan={4}>No maintenance scheduled for the next 3 days.</td>
                 </tr>
               )}
               {store.items.map((item) => (
