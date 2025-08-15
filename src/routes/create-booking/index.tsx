@@ -1,5 +1,5 @@
 import { component$, useStore, useVisibleTask$, useSignal, $, PropFunction } from '@builder.io/qwik';
-import { fetchWithAuth, getUserIdFromToken, getCookie } from '../../utils/api';
+import { fetchWithAuth, getUserIdFromToken } from '../../utils/api';
 import { Sidebar } from '../../components/dashboard/Slidebar';
 import { DashboardHeader } from '../../components/dashboard/DashboardHeader';
 
@@ -320,7 +320,7 @@ export default component$(() => {
 // Pure helper (module scope) to check if a date range intersects any blocked dates
 const intersectsBlocked = (startIso: string, endIso: string, blocked: string[]): boolean => {
   const toDate = (s: string) => new Date(`${s}T00:00:00`);
-  let d = toDate(startIso);
+  const d = toDate(startIso);
   const end = toDate(endIso);
   const seen = new Set(blocked);
   while (d <= end) {
@@ -341,7 +341,7 @@ export const DateRangePicker = component$<DateRangePickerProps & { maintenanceDa
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(n || 0);
 
 
-  const viDays = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
+  
 
   // Disallow booking past dates
   const todayIso = (() => {

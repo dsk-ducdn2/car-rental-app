@@ -345,7 +345,6 @@ const SingleDatePicker = component$<SingleDatePickerProps>(({
   const selected = useSignal<string | null>(value || null);
 
   const toIso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const fromIso = (iso: string) => new Date(`${iso}T00:00:00`);
   const startOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1);
   const endOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0);
   const fmtMonthTitle = (date: Date) => `Tháng ${String(date.getMonth() + 1).padStart(2, '0')} ${date.getFullYear()}`;

@@ -12,7 +12,9 @@ const ThemeToggle = component$(() => {
         window.matchMedia('(prefers-color-scheme: dark)').matches;
       const shouldDark = stored ? stored === 'dark' : prefersDark;
       isDark.value = document.documentElement.classList.contains('dark') || shouldDark;
-    } catch {}
+    } catch (err) {
+      void err;
+    }
   });
 
   const toggleTheme = $((): void => {
@@ -21,10 +23,10 @@ const ThemeToggle = component$(() => {
     const root = document.documentElement;
     if (next) {
       root.classList.add('dark');
-      try { localStorage.setItem('theme', 'dark'); } catch {}
+      try { localStorage.setItem('theme', 'dark'); } catch (err) { void err; }
     } else {
       root.classList.remove('dark');
-      try { localStorage.setItem('theme', 'light'); } catch {}
+      try { localStorage.setItem('theme', 'light'); } catch (err) { void err; }
     }
   });
 

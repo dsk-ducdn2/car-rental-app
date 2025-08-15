@@ -58,30 +58,7 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
     return startDate1 <= endDate2 && startDate2 <= endDate1;
   });
 
-  // Helper function to validate date ranges for overlaps
-  const validateDateRanges = $(async (newRule: PricingRule, excludeRuleId?: string) => {
-    for (const existingRule of pricingRules.value) {
-      // Skip validation against the same rule (for updates)
-      if (excludeRuleId && existingRule.id === excludeRuleId) {
-        continue;
-      }
-      
-      const hasOverlap = await checkDateOverlap(
-        newRule.effectiveDate, 
-        newRule.expiryDate, 
-        existingRule.effectiveDate, 
-        existingRule.expiryDate
-      );
-      
-      if (hasOverlap) {
-        return {
-          hasOverlap: true,
-          message: `Date range overlaps with existing rule (${existingRule.effectiveDate} to ${existingRule.expiryDate})`
-        };
-      }
-    }
-    return { hasOverlap: false, message: '' };
-  });
+  // Removed unused validateDateRanges helper to satisfy linter
 
   // Add new pricing rule
   const addPricingRule = $(async () => {
@@ -200,7 +177,7 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
         });
 
         if (res.ok) {
-          const resultData = await res.json();
+          await res.json();
 
           toastState.visible = true;
           setTimeout(() => {
@@ -290,7 +267,7 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
       });
 
       if (res.ok) {
-        const resultData = await res.json();
+        await res.json();
 
         toastState.visible = true;
         setTimeout(() => {
@@ -405,7 +382,7 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
                   </button>
                 </div>
               ) : (
-                pricingRules.value.map((rule, index) => (
+                pricingRules.value.map((rule) => (
                 <div key={rule.id} class="grid grid-cols-5 gap-4 items-center px-3 py-2 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
                   {/* Holiday Multiplier */}
                   <div>

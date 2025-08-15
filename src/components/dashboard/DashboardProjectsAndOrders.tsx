@@ -101,7 +101,9 @@ export const DashboardProjectsAndOrders = component$(() => {
             if (u?.companyId) userCompanyId = String(u.companyId);
           }
         }
-      } catch {}
+      } catch (err) {
+        void err;
+      }
 
       const [maintRes, vehiclesRes, bookingsRes] = await Promise.all([
         fetchWithAuth(`${apiUrl}/Maintenance`),
@@ -186,12 +188,13 @@ export const DashboardProjectsAndOrders = component$(() => {
           .sort((a, b) => b.revenue - a.revenue)
           .slice(0, 5);
         store.topVehicles = list;
-      } catch {
+      } catch (err) {
+        void err;
         store.topVehicles = [];
       } finally {
         store.topLoading = false;
       }
-    } catch (err) {
+    } catch {
       store.items = [];
     } finally {
       store.loading = false;

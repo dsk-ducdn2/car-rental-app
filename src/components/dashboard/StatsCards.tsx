@@ -63,7 +63,9 @@ export const StatsCards = component$(() => {
             if (u?.companyId) userCompanyId = String(u.companyId);
           }
         }
-      } catch {}
+      } catch (err) {
+        void err;
+      }
 
       const [vehiclesRes, bookingsRes, maintRes] = await Promise.all([
         fetchWithAuth(`${apiUrl}/Vehicles`).catch(() => undefined as unknown as Response),

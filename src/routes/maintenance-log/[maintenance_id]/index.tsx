@@ -52,7 +52,7 @@ export default component$(() => {
             form.created_by = String(createdBy);
           }
         }
-      } catch {}
+      } catch (err) { void err; }
 
       const res = await fetchWithAuth(`${API_ROOT}/MaintenanceLog/${maintenanceId}`);
       if (res.ok) {
@@ -119,7 +119,7 @@ export default component$(() => {
               createdByValue = userId;
             }
           }
-        } catch {}
+        } catch (err) { void err; }
       }
 
       const payload: any = {

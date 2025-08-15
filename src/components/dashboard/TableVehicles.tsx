@@ -79,9 +79,7 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
   });
 
   const handleEdit = $(async (vehicleId: string) => {
-    // Edit logic here
     window.location.href = `/edit-vehicle/${vehicleId}`;
-
   });
 
   const handleDelete = $((vehicleId: string) => {
@@ -99,7 +97,7 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
     pricingVehicleId.value = null;
   });
 
-  const handleMaintenance = $((vehicleId: string, vehicleName: string) => {
+  const handleMaintenance = $((vehicleId: string) => {
     // Redirect to full page create maintenance instead of opening modal
     window.location.href = `/create-maintenance/${vehicleId}`;
   });
@@ -415,7 +413,7 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
                       </button>
                       <span class="text-gray-300">|</span>
                       <button 
-                        onClick$={() => handleMaintenance(vehicle.id, `${vehicle.brand} ${vehicle.licensePlate}`)}
+                        onClick$={() => handleMaintenance(vehicle.id)}
                         class="text-green-600 hover:text-green-800 text-xs font-medium px-2 py-1 rounded hover:bg-green-50 transition-colors"
                         title="Create maintenance schedule"
                       >
