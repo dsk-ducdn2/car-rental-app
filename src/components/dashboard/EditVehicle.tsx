@@ -210,7 +210,7 @@ export default component$((props: { vehicle: Vehicle }) => {
           body: JSON.stringify({
             name: 'Personal',
             address: '',
-            phone: '0000000000',
+            phone: currentUser.phone || '0000000000', // Use current user's phone
             email: currentUserEmail.value || 'personal@example.com',
           }),
         });

@@ -33,9 +33,7 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
   const ITEMS_PER_PAGE = 8;
   const currentPage = useSignal(1);
 
-  const showNotification = useSignal(false);
-  const notificationMessage = useSignal('');
-  const notificationType = useSignal<'success' | 'error'>('success');
+
   const API_URL = import.meta.env.VITE_API_URL;
 
   // Add state for delete dialog and loading bar
@@ -104,14 +102,7 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
 
   // Removed closeMaintenanceDialog; no modal used
 
-  const handlePricingSuccess = $(() => {
-    notificationMessage.value = 'Pricing updated successfully';
-    notificationType.value = 'success';
-    showNotification.value = true;
-    setTimeout(() => {
-      showNotification.value = false;
-    }, 3000);
-  });
+
 
   // Removed handleMaintenanceSuccess; success handled on target page
 
@@ -131,35 +122,18 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
         },
       });
       if (response.status === 200) {
-        notificationMessage.value = 'Vehicle deleted successfully';
-        notificationType.value = 'success';
-        showNotification.value = true;
-
         // Remove vehicle from the list (if want to update UI immediately)
         const idx = vehicles.findIndex(v => v.id === deletingVehicleId.value);
         if (idx !== -1) {
           vehicles.splice(idx, 1);
         }
-
-        setTimeout(() => {
-          showNotification.value = false;
-        }, 3000);
+        // Reload the page to refresh the data
+        window.location.reload();
       } else {
-        notificationMessage.value = 'Failed to delete vehicle';
-        notificationType.value = 'error';
-        showNotification.value = true;
-        setTimeout(() => {
-          showNotification.value = false;
-        }, 3000);
+        console.error('Failed to delete vehicle:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Error deleting vehicle:', error);
-      notificationMessage.value = 'Error occurred while deleting vehicle';
-      notificationType.value = 'error';
-      showNotification.value = true;
-      setTimeout(() => {
-        showNotification.value = false;
-      }, 3000);
     }
 
     showDeleteDialog.value = false;
@@ -193,30 +167,7 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
 
   return (
     <div class="relative w-full h-full">
-      {/* Success/Error Notification */}
-      {showNotification.value && (
-                <div
-          class={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-white ${
-            notificationType.value === 'success' ? 'bg-yellow-500' : 'bg-red-500'
-          }`}
-        >
-          <div class="flex items-center justify-between">
-            <span>{notificationMessage.value}</span>
-            <button
-              onClick$={() => (showNotification.value = false)}
-              class={`ml-4 text-white hover:text-gray-200 ${
-                notificationType.value === 'success' 
-                  ? 'hover:text-yellow-200' 
-                  : 'hover:text-red-200'
-                }`}
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
+
 
       {/* Confirmation Dialog (Delete) */}
       {showDeleteDialog.value && (
@@ -274,7 +225,6 @@ export default component$<TableVehiclesProps>(({ vehicles }) => {
         <PricingConfig
           vehicleId={pricingVehicleId.value}
           onClose={closePricingDialog}
-          onSuccess={handlePricingSuccess}
         />
       )}
 

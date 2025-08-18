@@ -27,7 +27,7 @@ interface PricingRule {
 interface PricingConfigProps {
   vehicleId: string;
   onClose: QRL<() => void>;
-  onSuccess: QRL<() => void>;
+  onSuccess?: QRL<() => void>;
 }
 
 export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }) => {
@@ -182,7 +182,7 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
           toastState.visible = true;
           setTimeout(() => {
             toastState.visible = false;
-            onSuccess();
+            onSuccess?.();
             onClose();
           }, 2000);
         } else {
@@ -272,7 +272,7 @@ export default component$<PricingConfigProps>(({ vehicleId, onClose, onSuccess }
         toastState.visible = true;
         setTimeout(() => {
           toastState.visible = false;
-          onSuccess();
+          onSuccess?.();
           onClose();
         }, 2000);
       } else {
